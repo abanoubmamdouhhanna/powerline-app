@@ -7,13 +7,15 @@ import {
   createEmployeeSchema,
   headersSchema,
   logInSchema,
+  updateEmployeeSchema,
 } from "./controller/hr.validation.js";
 
 const router = Router();
 
+//create employee
 router.post(
-  "/create", 
-  flexibleDocumentUpload(5, 21), 
+  "/createEmployee",
+  flexibleDocumentUpload(5, 25),
   isValid(createEmployeeSchema),
   hrController.createEmployee
 );
@@ -27,6 +29,28 @@ router.patch(
   isValid(headersSchema, true),
   auth(["admin", "user", "assistant"]),
   hrController.logOut
+);
+// update employee
+router.patch(
+  "/updateEmployee/:employeeId",
+  flexibleDocumentUpload(5, 1),
+  isValid(updateEmployeeSchema),
+  hrController.updateEmployee
+);
+// delete employee
+router.delete("/deleteEmployee/:employeeId", hrController.deleteEmployee);
+
+//delete specific document
+router.delete(
+  "/deleteDocument",
+  hrController.deleteDocument
+);
+
+// add new document
+router.post(
+  "/addUserDocument",
+  flexibleDocumentUpload(5, 5),
+  hrController.addUserDocument
 );
 
 export default router;

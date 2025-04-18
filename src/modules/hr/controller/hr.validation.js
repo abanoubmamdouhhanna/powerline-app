@@ -204,3 +204,137 @@ export const logInSchema = (lang = "en") =>
       "object.required": getMessage("LOGIN_DATA_REQUIRED", lang),
     });
 //====================================================================================================================//
+// Update Employee Schema
+export const updateEmployeeSchema = (lang = "en") =>
+  joi
+    .object({
+      name: generalFields(lang).name.optional().trim(),
+
+      email: generalFields(lang).email.optional(),
+
+      password: generalFields(lang).password.optional(),
+
+      phone: generalFields(lang).phone.optional(),
+
+      age: joi
+        .number()
+        .integer()
+        .min(18)
+        .max(100)
+        .optional()
+        .messages({
+          "number.base": getMessage("AGE_MUST_BE_NUMBER", lang),
+          "number.integer": getMessage("AGE_MUST_BE_INTEGER", lang),
+          "number.min": getMessage("EMPLOYEE_MIN_AGE", lang),
+          "number.max": getMessage("EMPLOYEE_MAX_AGE", lang),
+        }),
+
+      dateOfBirth: joi
+        .date()
+        .max("now")
+        .optional()
+        .messages({
+          "date.base": getMessage("INVALID_DOB", lang),
+          "date.max": getMessage("DOB_FUTURE", lang),
+        }),
+
+      gender: joi
+        .string()
+        .valid("male", "female", "other")
+        .optional()
+        .messages({
+          "string.base": getMessage("GENDER_STRING", lang),
+          "any.only": getMessage("GENDER_VALID_VALUES", lang),
+        }),
+
+      nationality: joi
+        .string()
+        .optional()
+        .messages({
+          "string.base": getMessage("NATIONALITY_STRING", lang),
+        }),
+
+      address: joi
+        .string()
+        .optional()
+        .messages({
+          "string.base": getMessage("ADDRESS_STRING", lang),
+        }),
+
+      city: joi
+        .string()
+        .optional()
+        .messages({
+          "string.base": getMessage("CITY_STRING", lang),
+        }),
+
+      nationalId: joi
+        .string()
+        .optional()
+        .messages({
+          "string.base": getMessage("NATIONAL_ID_STRING", lang),
+        }),
+
+      swiftCode: joi.string().allow("", null).optional(),
+
+      IBAN: joi.string().allow("", null).optional(),
+
+      permissions: generalFields(lang).id.optional(),
+
+      station: joi
+        .string()
+        .optional()
+        .messages({
+          "string.base": getMessage("STATION_STRING", lang),
+        }),
+
+      salary: joi
+        .number()
+        .positive()
+        .optional()
+        .messages({
+          "number.base": getMessage("SALARY_NUMBER", lang),
+          "number.positive": getMessage("SALARY_POSITIVE", lang),
+        }),
+
+      timeWork: joi
+        .string()
+        .optional()
+        .messages({
+          "string.base": getMessage("TIME_WORK_STRING", lang),
+        }),
+
+      joiningDate: joi
+        .date()
+        .optional()
+        .messages({
+          "date.base": getMessage("INVALID_JOINING_DATE", lang),
+        }),
+
+      contractDuration: joi
+        .date()
+        .optional()
+        .messages({
+          "date.base": getMessage("CONTRACT_DURATION_INVALID", lang),
+        }),
+
+      residenceExpiryDate: joi
+        .date()
+        .greater("now")
+        .optional()
+        .messages({
+          "date.base": getMessage("INVALID_RESIDENCE_EXPIRY", lang),
+          "date.greater": getMessage("RESIDENCE_EXPIRY_FUTURE", lang),
+        }),
+
+      file: joi
+        .any()
+        .optional()
+        .messages({
+          "any.required": getMessage("FILE_REQUIRED", lang),
+        }),
+    })
+    .optional()
+    .messages({
+      "object.base": getMessage("INVALID_EMPLOYEE_DATA", lang),
+    });

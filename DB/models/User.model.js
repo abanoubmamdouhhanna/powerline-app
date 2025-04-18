@@ -1,35 +1,44 @@
 import mongoose, { model, Schema, Types } from "mongoose";
 
 // 🔹 Document Sub-schema
-const documentSchema = new Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    files: [
-      {
-        type: String,
-      },
-    ],
-    start: {
-      type: Date,
-      required: true,
-    },
-    end: {
-      type: Date,
-      required: true,
-    },
+const documentSchema = new Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
   },
-  { _id: false }
-);
+  files: [
+    {
+      secure_url: {
+        type: String,
+        required: true,
+      },
+      public_id: {
+        type: String,
+        required: true,
+      },
+      resource_type: {
+        type: String,
+        required: true,
+        enum: ["image", "raw"], // optional but safe
+      },
+    },
+  ],
 
+  start: {
+    type: Date,
+    required: true,
+  },
+  end: {
+    type: Date,
+    required: true,
+  },
+});
 // 🔹 Main User Schema
 const userSchema = new Schema(
   {
     // 🔹 Personal Info
-    customId:String,
+    customId: String,
     name: {
       type: String,
       required: [true, "Name is required"],

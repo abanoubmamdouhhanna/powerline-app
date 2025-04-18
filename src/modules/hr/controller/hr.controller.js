@@ -4,8 +4,13 @@ import { asyncHandler } from "../../../utils/errorHandling.js";
 import { generateToken } from "../../../utils/generateAndVerifyToken.js";
 import { getTranslation } from "../../../middlewares/language.middleware.js";
 import { capitalizeWords } from "../../../utils/capitalize.js";
-import { uploadToCloudinary } from "../../../utils/cloudinaryHelpers.js";
+import {
+  deleteFromCloudinary,
+  uploadImageCloudinary,
+  uploadToCloudinary,
+} from "../../../utils/cloudinaryHelpers.js";
 import { nanoid } from "nanoid";
+import cloudinary from "../../../utils/cloudinary.js";
 
 //create Employee
 export const createEmployee = asyncHandler(async (req, res, next) => {
@@ -52,10 +57,10 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
   // Upload profile pic (if exists)
   const profilePicFile = uploadedFiles?.profilePic?.[0];
   const imageUrl = profilePicFile
-    ? await uploadToCloudinary(
+    ? await uploadImageCloudinary(
         profilePicFile,
         `${process.env.APP_NAME}/Users/${customId}/profilePic`,
-        `${customId}_profilePic_${profilePicFile.originalname}`
+        `${customId}_profilePic`
       )
     : null;
 
@@ -230,5 +235,256 @@ export const logOut = asyncHandler(async (req, res, next) => {
   return res.status(200).json({
     status: "success",
     message: getTranslation("Logged out successfully", req.language),
+  });
+});
+//====================================================================================================================//
+//update employee
+export const updateEmployee = asyncHandler(async (req, res, next) => {
+  const { employeeId } = req.params;
+
+  const existingEmployee = await userModel.findById(employeeId);
+  if (!existingEmployee) {
+    return next(new Error("Employee not found", { cause: 404 }));
+  }
+
+  const {
+    name,
+    email,
+    password,
+    phone,
+    age,
+    dateOfBirth,
+    gender,
+    nationality,
+    address,
+    city,
+    nationalId,
+    swiftCode,
+    IBAN,
+    permissions,
+    station,
+    salary,
+    timeWork,
+    joiningDate,
+    contractDuration,
+    residenceExpiryDate,
+  } = req.body;
+
+  const formattedName = name ? capitalizeWords(name) : undefined;
+  const uploadedFiles = req.files || {};
+
+  // Check for updated email or phone duplicates
+  const [existingEmail, existingPhone] = await Promise.all([
+    email && email !== existingEmployee.email
+      ? userModel.findOne({ email })
+      : null,
+    phone && phone !== existingEmployee.phone
+      ? userModel.findOne({ phone })
+      : null,
+  ]);
+  if (existingEmail)
+    return next(new Error("Email already exists", { cause: 409 }));
+  if (existingPhone)
+    return next(new Error("Phone number already exists", { cause: 409 }));
+
+  // Update profile pic if provided
+  const profilePicFile = uploadedFiles?.profilePic?.[0];
+  if (profilePicFile) {
+    const profilePicFolder = `${process.env.APP_NAME}/Users/${existingEmployee.customId}/profilePic`;
+    await deleteFromCloudinary(profilePicFolder);
+
+    existingEmployee.imageUrl = await uploadToCloudinary(
+      profilePicFile,
+      profilePicFolder,
+      `${existingEmployee.customId}_profilePic_${profilePicFile.originalname}`
+    );
+  }
+
+  // Update fields (only if provided)
+  const fieldsToUpdate = {
+    name: formattedName,
+    email,
+    password: password ? Hash({ plainText: password }) : undefined,
+    phone,
+    age,
+    dateOfBirth,
+    gender,
+    nationality,
+    address,
+    city,
+    nationalId,
+    swiftCode,
+    IBAN,
+    permissions,
+    station,
+    salary,
+    timeWork,
+    joiningDate,
+    contractDuration,
+    residenceExpiryDate,
+  };
+
+  // Apply fields
+  Object.entries(fieldsToUpdate).forEach(([key, value]) => {
+    if (value !== undefined) existingEmployee[key] = value;
+  });
+
+  await existingEmployee.save();
+
+  return res.status(200).json({
+    message: getTranslation("Employee updated successfully", req.language),
+    result: existingEmployee,
+  });
+});
+//====================================================================================================================//
+// Delete employee
+export const deleteEmployee = asyncHandler(async (req, res, next) => {
+  const { employeeId } = req.params;
+
+  const existingEmployee = await userModel.findById(employeeId);
+  if (!existingEmployee) {
+    return next(new Error("Employee not found", { cause: 404 }));
+  }
+
+  try {
+    const folderBase = `${process.env.APP_NAME}/Users/${existingEmployee.customId}`;
+
+    const fileInfos = existingEmployee.documents.flatMap((doc) => doc.files);
+
+    // Delete each file with the correct resource_type
+    await Promise.all(
+      fileInfos.map(({ public_id, resource_type }) =>
+        cloudinary.uploader.destroy(public_id, { resource_type })
+      )
+    );
+    // Delete the Cloudinary folder (must be empty)
+    await deleteFromCloudinary(folderBase);
+
+    // Remove from DB
+    await existingEmployee.deleteOne();
+
+    return res.status(200).json({ message: "Employee deleted successfully" });
+  } catch (error) {
+    return next(new Error("Failed to delete employee", { cause: 500 }));
+  }
+});
+//====================================================================================================================//
+// Delete document
+export const deleteDocument = asyncHandler(async (req, res, next) => {
+  const { docId, userId } = req.body;
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
+
+  const documentIndex = user.documents.findIndex(
+    (doc) => doc._id.toString() === docId
+  );
+
+  if (documentIndex === -1) {
+    return next(new Error("Document not found", { cause: 404 }));
+  }
+
+  const [documentToDelete] = user.documents.splice(documentIndex, 1);
+  const files = documentToDelete.files;
+
+  if (!files.length) {
+    return next(
+      new Error("No files to delete in this document", { cause: 404 })
+    );
+  }
+
+  // Extract folderBase from the first file's public_id
+  const firstFilePublicId = files[0].public_id;
+  const folderBase = firstFilePublicId.substring(
+    0,
+    firstFilePublicId.lastIndexOf("/")
+  );
+
+  // Delete all files from Cloudinary
+  try {
+    const deletePromises = files.map((file) =>
+      cloudinary.uploader.destroy(file.public_id, {
+        resource_type: file.resource_type || "raw",
+      })
+    );
+
+    const results = await Promise.allSettled(deletePromises);
+
+    results.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        console.log(`File ${files[index].public_id} deleted successfully.`);
+      } else {
+        console.error(
+          `Error deleting file ${files[index].public_id}:`,
+          result.reason
+        );
+      }
+    });
+
+    // Delete folder after all files are handled
+    try {
+      await deleteFromCloudinary(folderBase);
+      console.log(`Folder ${folderBase} deleted successfully.`);
+    } catch (folderErr) {
+      console.error(`Failed to delete folder ${folderBase}:`, folderErr);
+    }
+  } catch (err) {
+    console.error("Error while deleting files from Cloudinary:", err);
+    return next(
+      new Error("Error deleting files from Cloudinary", { cause: 500 })
+    );
+  }
+
+  await user.save();
+
+  return res.status(200).json({
+    message: "Document and associated files & folder deleted successfully",
+  });
+});
+//====================================================================================================================//
+// add new document
+export const addUserDocument = asyncHandler(async (req, res, next) => {
+  const { userId, title, start, end } = req.body;
+
+  if (!title || !start || !end || !req.files) {
+    return next(
+      new Error("Missing required fields or document files", { cause: 400 })
+    );
+  }
+
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
+
+  const documentIndex = user.documents.length;
+  const folder = `${process.env.APP_NAME}/Users/${user.customId}/documents/document_${documentIndex}`;
+
+  const uploadedFiles = await Promise.all(
+    Object.values(req.files)
+      .flat()
+      .map((file) =>
+        uploadToCloudinary(
+          file,
+          folder,
+          `${user.customId}_document_${documentIndex}_${file.originalname}`
+        )
+      )
+  );
+
+  const newDocument = {
+    title,
+    start: new Date(start),
+    end: new Date(end),
+    files: uploadedFiles,
+  };
+
+  user.documents.push(newDocument);
+  await user.save();
+
+  return res.status(201).json({
+    message: "Document added successfully",
+    document: user.documents.at(-1),
   });
 });

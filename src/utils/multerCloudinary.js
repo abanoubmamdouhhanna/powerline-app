@@ -16,18 +16,22 @@ export const allowedTypesMap = (() => {
     "application/pdf",
     "application/msword", // .doc
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+    "application/vnd.rar", // .rar
+    "application/zip", // .zip
     ...imageTypes,
   ];
 
   return {
     profilePic: imageTypes,
     documentFiles: docTypes, // Generic document files type
+    documents: docTypes,
   };
 })();
 
 const fileValidation = (allowedTypesMap = {}) => {
   return asyncHandler(async (req, file, cb) => {
     const fileExtension = file.originalname.split(".").pop().toLowerCase();
+
     if (dangerousExtensions.includes(fileExtension)) {
       return cb(
         new Error(`File type '${fileExtension}' not allowed`, { cause: 400 }),
@@ -35,27 +39,15 @@ const fileValidation = (allowedTypesMap = {}) => {
       );
     }
 
-    // Check file type based on field name pattern
-    if (file.fieldname === 'profilePic') {
-      // Profile picture validation
-      if (!allowedTypesMap.profilePic.includes(file.mimetype)) {
-        return cb(
-          new Error(`Invalid type for profile picture`, { cause: 400 }),
-          false
-        );
-      }
-    } else if (file.fieldname.startsWith('documentFiles_')) {
-      // Document file validation
-      if (!allowedTypesMap.documentFiles.includes(file.mimetype)) {
-        return cb(
-          new Error(`Invalid type for document file`, { cause: 400 }),
-          false
-        );
-      }
-    } else {
-      // Unknown field
+    const allAllowedMimes = new Set([
+      ...allowedTypesMap.profilePic,
+      ...allowedTypesMap.documentFiles,
+      ...allowedTypesMap.documents,
+    ]);
+
+    if (!allAllowedMimes.has(file.mimetype)) {
       return cb(
-        new Error(`Unexpected file field: ${file.fieldname}`, { cause: 400 }),
+        new Error(`File type '${file.mimetype}' not allowed`, { cause: 400 }),
         false
       );
     }
@@ -76,30 +68,32 @@ export function fileUpload(size, allowedTypesMap) {
 export function flexibleDocumentUpload(size = 5, maxTotalFiles = 5) {
   return (req, res, next) => {
     const upload = fileUpload(size, allowedTypesMap).any();
-    
+
     upload(req, res, (err) => {
       if (err) return next(err);
-      
+
       // Verify we don't exceed the maximum number of files
       if (req.files && req.files.length > maxTotalFiles) {
-        return next(new Error(`Maximum of ${maxTotalFiles} files allowed`, { cause: 400 }));
+        return next(
+          new Error(`Maximum of ${maxTotalFiles} files allowed`, { cause: 400 })
+        );
       }
-      
+
       // Organize files by field name for easier access in the controller
       const organizedFiles = {};
-      
+
       if (req.files && req.files.length > 0) {
-        req.files.forEach(file => {
+        req.files.forEach((file) => {
           if (!organizedFiles[file.fieldname]) {
             organizedFiles[file.fieldname] = [];
           }
           organizedFiles[file.fieldname].push(file);
         });
       }
-      
+
       // Replace req.files with our organized structure
       req.files = organizedFiles;
-      
+
       next();
     });
   };

@@ -16,7 +16,7 @@ export const dangerousExtensions = [
 
   // Files used for exploits or attacks
   "dat", "bak", "temp", "swp", "vmdk", "dmp", "dump", "reg", "env", "tmp", "bin", "b64", "hex", 
-  "base64", "encrypted", "crypto", "enc", "ps", "sha1", "sha256", "zip", "gz", "7z", "rar", "tar", 
+  "base64", "encrypted", "crypto", "enc", "ps", "sha1", "sha256", "gz", "7z", "tar", 
   "tar.gz", "tar.bz2", "xz", "iso", "dmg", "tgz", "lzh", "cab", "crx", "xpi", "img", "apk", "ipa", 
   "hqx", "uefi", "zst", "tbz", "lz", "vhd", "rpm", "deb", "pkg",
 
