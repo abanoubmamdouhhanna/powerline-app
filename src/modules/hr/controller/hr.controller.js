@@ -11,6 +11,7 @@ import {
 } from "../../../utils/cloudinaryHelpers.js";
 import { nanoid } from "nanoid";
 import cloudinary from "../../../utils/cloudinary.js";
+import attendanceModel from "../../../../DB/models/Attendance.model.js";
 
 //create Employee
 export const createEmployee = asyncHandler(async (req, res, next) => {
@@ -488,3 +489,32 @@ export const addUserDocument = asyncHandler(async (req, res, next) => {
     document: user.documents.at(-1),
   });
 });
+//====================================================================================================================//
+//get all employees
+export const getAllEmployees = asyncHandler(async (req, res, next) => {
+  const employees = await userModel.find(
+    { role: "employee" },
+    "name employeeCode timeWork"
+  );
+  return res.status(201).json({
+    status: "success",
+    count: employees.length,
+    result: employees,
+  });
+});
+//====================================================================================================================//
+//user attendance
+export const userAttendance =asyncHandler(async(req,res,next)=>
+{
+  const {userId}=req.body
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
+const attendance = await attendanceModel.find({user:userId},"date checkIn checkOut workingHours status")
+return res.status(201).json({
+  status: "success",
+  attendanceDays: attendance.length,
+  result: attendance,
+});
+})

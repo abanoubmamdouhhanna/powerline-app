@@ -41,16 +41,25 @@ router.patch(
 router.delete("/deleteEmployee/:employeeId", hrController.deleteEmployee);
 
 //delete specific document
-router.delete(
-  "/deleteDocument",
-  hrController.deleteDocument
-);
+router.delete("/deleteDocument", hrController.deleteDocument);
 
 // add new document
 router.post(
   "/addUserDocument",
   flexibleDocumentUpload(5, 5),
   hrController.addUserDocument
+);
+
+//get all employees
+router.get(
+  "/getAllEmployees",
+  hrController.getAllEmployees
+);
+
+//user attendance
+router.get(
+  "/userAttendance",
+  hrController.userAttendance
 );
 
 export default router;

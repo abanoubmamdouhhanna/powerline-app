@@ -4,6 +4,7 @@ import { glopalErrHandling } from "../utils/errorHandling.js";
 import { languageMiddleware } from "../middlewares/language.middleware.js";
 import { AppError } from "../utils/appError.js";
 import hrRouter from "./hr/hr.router.js"
+import employeeRouter from './employee/employee.router.js'
 
 const initApp = (app, express) => {
   
@@ -16,6 +17,7 @@ const initApp = (app, express) => {
 
   // Routes
   app.use("/hr", hrRouter);
+  app.use("/employee", employeeRouter);
 
 
   // Catch-all for undefined routes

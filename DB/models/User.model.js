@@ -159,8 +159,8 @@ const userSchema = new Schema(
     // 🔹 Permissions & Status
     role: {
       type: String,
-      enum: ["admin", "user", "assistant"],
-      default: "user",
+      enum: ["admin", "employee", "assistant"],
+      default: "employee",
     },
     permissions: {
       type: Types.ObjectId,
