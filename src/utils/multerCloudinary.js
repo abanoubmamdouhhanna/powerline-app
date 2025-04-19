@@ -25,6 +25,8 @@ export const allowedTypesMap = (() => {
     profilePic: imageTypes,
     documentFiles: docTypes, // Generic document files type
     documents: docTypes,
+    cleaningImages: imageTypes,
+    inventoryImages: imageTypes,
   };
 })();
 
@@ -41,6 +43,8 @@ const fileValidation = (allowedTypesMap = {}) => {
 
     const allAllowedMimes = new Set([
       ...allowedTypesMap.profilePic,
+      ...allowedTypesMap.cleaningImages,
+      ...allowedTypesMap.inventoryImages,
       ...allowedTypesMap.documentFiles,
       ...allowedTypesMap.documents,
     ]);

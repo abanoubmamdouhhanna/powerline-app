@@ -62,4 +62,10 @@ router.get(
   hrController.userAttendance
 );
 
+//get job tasks
+router.get(
+  "/getJobTasks/:userId",
+  hrController.getJobTasks
+);
+
 export default router;

@@ -12,6 +12,8 @@ import {
 import { nanoid } from "nanoid";
 import cloudinary from "../../../utils/cloudinary.js";
 import attendanceModel from "../../../../DB/models/Attendance.model.js";
+import cleaningTaskModel from "../../../../DB/models/CleaningTask.model.js";
+import inventoryTaskModel from "../../../../DB/models/InventoryTask.model.js";
 
 //create Employee
 export const createEmployee = asyncHandler(async (req, res, next) => {
@@ -504,17 +506,39 @@ export const getAllEmployees = asyncHandler(async (req, res, next) => {
 });
 //====================================================================================================================//
 //user attendance
-export const userAttendance =asyncHandler(async(req,res,next)=>
-{
-  const {userId}=req.body
+export const userAttendance = asyncHandler(async (req, res, next) => {
+  const { userId } = req.body;
   const user = await userModel.findById(userId);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
-const attendance = await attendanceModel.find({user:userId},"date checkIn checkOut workingHours status")
-return res.status(201).json({
-  status: "success",
-  attendanceDays: attendance.length,
-  result: attendance,
+  const attendance = await attendanceModel.find(
+    { user: userId },
+    "date checkIn checkOut workingHours status"
+  );
+  return res.status(201).json({
+    status: "success",
+    attendanceDays: attendance.length,
+    result: attendance,
+  });
 });
+//====================================================================================================================//
+//get job tasks
+export const getJobTasks =asyncHandler(async(req,res,next)=>
+{
+  const {userId}=req.params
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
+  const cleaningTasks=await cleaningTaskModel.find({user:userId},"subTask date time location employeeName cleaningImages")
+  const inventoryTasks=await inventoryTaskModel.find({user:userId},"subTask date time location employeeName inventoryImages")
+
+  return res.status(200).json({
+    status: "success",
+    data: {
+      cleaningTasks,
+      inventoryTasks,
+    },
+  });
 })

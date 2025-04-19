@@ -2,12 +2,10 @@ import mongoose, { Schema, model, Types } from "mongoose";
 
 const permissionSchema = new Schema(
   {
-    assistant: {
+    assistant: [{
       type: Types.ObjectId,
       ref: "User",
-      required: true,
-      unique: true, // Each assistant has one permission document
-    },
+    }],
     permissionName: {
       type: String,
       required: true,

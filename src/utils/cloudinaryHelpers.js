@@ -14,7 +14,19 @@ export const uploadImageCloudinary = async (file, folderpath, publicId) => {
     throw new Error(`Failed to upload ${publicId}`, { cause: 500 });
   }
 };
-
+//====================================================================================================================//
+//upload multible images
+export const uploadMultipleImages = async (files, folderId, folderName) => {
+  return Promise.all(
+    files.map((file, i) =>
+      uploadImageCloudinary(
+        file,
+        `${process.env.APP_NAME}/${folderName}/${folderId}`,
+        `${folderId}_${folderName}_${i}`
+      )
+    )
+  );
+};
 //====================================================================================================================//
 //images and files
 export const uploadToCloudinary = async (file, folderpath, publicId) => {
