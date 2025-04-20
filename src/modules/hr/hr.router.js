@@ -16,7 +16,7 @@ const router = Router();
 router.post(
   "/createEmployee",
   flexibleDocumentUpload(5, 25),
-  // isValid(createEmployeeSchema),
+  isValid(createEmployeeSchema),
   hrController.createEmployee
 );
 
