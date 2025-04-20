@@ -135,75 +135,76 @@ import inventoryTaskModel from "../../../../DB/models/InventoryTask.model.js";
 //   });
 // });
 export const createEmployee = asyncHandler(async (req, res, next) => {
-  const {
-    name,
-    email,
-    password,
-    phone,
-    age,
-    dateOfBirth,
-    gender,
-    nationality,
-    address,
-    city,
-    nationalId,
-    swiftCode,
-    IBAN,
-    permissions,
-    station,
-    salary,
-    timeWork,
-    joiningDate,
-    contractDuration,
-    residenceExpiryDate,
-    documents: documentsString, // Receive as string
-  } = req.body;
+  try {
+    const {
+      name,
+      email,
+      password,
+      phone,
+      age,
+      dateOfBirth,
+      gender,
+      nationality,
+      address,
+      city,
+      nationalId,
+      swiftCode,
+      IBAN,
+      permissions,
+      station,
+      salary,
+      timeWork,
+      joiningDate,
+      contractDuration,
+      residenceExpiryDate,
+      documents: documentsData,
+    } = req.body;
 
-  const documentsData = JSON.parse(documentsString || '[]'); // Parse the JSON string, default to empty array if null
+    // Format and validate essential data
+    const formattedName = capitalizeWords(name);
+    const customId = nanoid();
 
-  const formattedName = capitalizeWords(name);
-  const customId = nanoid();
+    // Check for duplicates in parallel
+    const [existingEmail, existingPhone] = await Promise.all([
+      userModel.findOne({ email }),
+      userModel.findOne({ phone }),
+    ]);
 
-  // Check for duplicates in parallel
-  const [existingEmail, existingPhone] = await Promise.all([
-    userModel.findOne({ email }),
-    userModel.findOne({ phone }),
-  ]);
+    if (existingEmail)
+      return next(new Error("Email already exists", { cause: 401 }));
+    if (existingPhone)
+      return next(new Error("Phone number already exists", { cause: 401 }));
 
-  if (existingEmail)
-    return next(new Error("Email already exists", { cause: 401 }));
-  if (existingPhone)
-    return next(new Error("Phone number already exists", { cause: 401 }));
+    const uploadedFiles = req.files || {};
 
-  const uploadedFiles = req.files || {};
+    // Upload profile pic (if exists)
+    const profilePicFile = uploadedFiles?.profilePic?.[0];
+    const imageUrl = profilePicFile
+      ? await uploadImageCloudinary(
+          profilePicFile,
+          `${process.env.APP_NAME}/Users/${customId}/profilePic`,
+          `${customId}_profilePic`
+        )
+      : null;
 
-  // Upload profile pic (if exists)
-  const profilePicFile = uploadedFiles?.profilePic?.[0];
-  const imageUrl = profilePicFile
-    ? await uploadImageCloudinary(
-        profilePicFile,
-        `${process.env.APP_NAME}/Users/${customId}/profilePic`,
-        `${customId}_profilePic`
-      )
-    : null;
-
-  // Process document uploads in parallel
-  const processedDocuments = Array.isArray(documentsData)
-    ? await Promise.all(
-        documentsData.map(async (doc, i) => {
-          const { title, start, end } = doc;
-
-          if (!title || !start || !end) {
-            throw new Error(
-              "Each document must have title, start date, and end date"
-            );
-          }
-
-          const files = uploadedFiles[`documentFiles_${i}`] || [];
+    // Process document uploads in parallel
+    const processedDocuments = [];
+    
+    // Check if documents exist in request body
+    if (req.body.documents) {
+      // Handle documents from form data
+      for (let i = 0; i < 20; i++) { // Set a reasonable limit
+        const titleKey = `documents[${i}][title]`;
+        const startKey = `documents[${i}][start]`;
+        const endKey = `documents[${i}][end]`;
+        
+        if (req.body[titleKey]) {
+          const documentFiles = uploadedFiles[`documentFiles_${i}`] || [];
           const folder = `${process.env.APP_NAME}/Users/${customId}/documents/document_${i}`;
-
+          
+          // Upload files for this document
           const fileUploads = await Promise.all(
-            files.map((file) =>
+            documentFiles.map((file) =>
               uploadToCloudinary(
                 file,
                 folder,
@@ -211,48 +212,56 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
               )
             )
           );
-
-          return {
-            title,
-            start: new Date(start),
-            end: new Date(end),
+          
+          // Add document to processed array
+          processedDocuments.push({
+            title: req.body[titleKey],
+            start: new Date(req.body[startKey]),
+            end: new Date(req.body[endKey]),
             files: fileUploads,
-          };
-        })
-      )
-    : [];
+          });
+        } else {
+          // No more documents to process
+          break;
+        }
+      }
+    }
 
-  // Create employee record
-  const newEmployee = await userModel.create({
-    name: formattedName,
-    email,
-    password: Hash({ plainText: password }),
-    phone,
-    age,
-    dateOfBirth,
-    gender,
-    nationality,
-    address,
-    city,
-    imageUrl,
-    nationalId,
-    swiftCode,
-    IBAN,
-    customId,
-    permissions,
-    station,
-    salary,
-    timeWork,
-    joiningDate,
-    contractDuration,
-    residenceExpiryDate,
-    documents: processedDocuments,
-  });
+    // Create employee record
+    const newEmployee = await userModel.create({
+      name: formattedName,
+      email,
+      password: Hash({ plainText: password }),
+      phone,
+      age,
+      dateOfBirth,
+      gender,
+      nationality,
+      address,
+      city,
+      imageUrl,
+      nationalId,
+      swiftCode,
+      IBAN,
+      customId,
+      permissions,
+      station,
+      salary,
+      timeWork,
+      joiningDate,
+      contractDuration,
+      residenceExpiryDate,
+      documents: processedDocuments,
+    });
 
-  return res.status(201).json({
-    message: getTranslation("Account created successfully", req.language),
-    result: newEmployee,
-  });
+    return res.status(201).json({
+      message: getTranslation("Account created successfully", req.language),
+      result: newEmployee,
+    });
+  } catch (error) {
+    console.error("Error creating employee:", error);
+    return next(new Error("Failed to create employee: " + error.message, { cause: 500 }));
+  }
 });
 
 //====================================================================================================================//
