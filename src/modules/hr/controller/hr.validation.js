@@ -175,7 +175,7 @@ export const createEmployeeSchema = (lang = "en") =>
           "any.required": getMessage("RESIDENCE_EXPIRY_REQUIRED", lang),
         }),
 
-      documents: generateDocumentValidationSchema(lang),
+      // documents: generateDocumentValidationSchema(lang),
 
       file: joi
         .any()
