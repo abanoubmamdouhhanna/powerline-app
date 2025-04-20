@@ -7,24 +7,7 @@ const documentSchema = new Schema({
     required: true,
     trim: true,
   },
-  // files: [
-  //   {
-  //     secure_url: {
-  //       type: String,
-  //       required: true,
-  //     },
-  //     public_id: {
-  //       type: String,
-  //       required: true,
-  //     },
-  //     resource_type: {
-  //       type: String,
-  //       required: true,
-  //       enum: ["image", "raw"], // optional but safe
-  //     },
-  //   },
-  // ],
-  files: 
+  files: [
     {
       secure_url: {
         type: String,
@@ -40,7 +23,7 @@ const documentSchema = new Schema({
         enum: ["image", "raw"], // optional but safe
       },
     },
-  
+  ],  
   start: {
     type: Date,
     required: true,
