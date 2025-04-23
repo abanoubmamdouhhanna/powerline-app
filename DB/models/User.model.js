@@ -129,7 +129,8 @@ const userSchema = new Schema(
     },
     timeWork: {
       type: String,
-      required: true,
+      enum: ["day", "night"],
+      default:"day"
     },
     joiningDate: {
       type: Date,

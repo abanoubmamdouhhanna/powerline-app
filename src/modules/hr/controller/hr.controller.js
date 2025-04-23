@@ -496,7 +496,7 @@ export const addUserDocument = asyncHandler(async (req, res, next) => {
 export const getAllEmployees = asyncHandler(async (req, res, next) => {
   const employees = await userModel.find(
     { role: "employee" },
-    "name employeeCode timeWork"
+    "name email imageUrl employeeCode timeWork"
   );
   return res.status(201).json({
     status: "success",
