@@ -23,7 +23,7 @@ const documentSchema = new Schema({
         enum: ["image", "raw"], // optional but safe
       },
     },
-  ],  
+  ],
   start: {
     type: Date,
     required: true,
@@ -40,7 +40,7 @@ const userSchema = new Schema(
     customId: String,
     name: {
       type: String,
-      required: [true, "Name is required"],
+      required: true,
       minlength: 3,
       maxlength: 20,
       trim: true,
@@ -72,6 +72,7 @@ const userSchema = new Schema(
     gender: {
       type: String,
       enum: ["male", "female"],
+      default:"male"
     },
     nationality: {
       type: String,
@@ -109,10 +110,17 @@ const userSchema = new Schema(
       type: String,
       unique: true,
     },
+    workFor: {
+      type: String,
+      enum: ["stations", "company"],
+      default:"stations"
+    },
     station: {
       type: Types.ObjectId,
       ref: "Station",
-      required: true,
+      required: function () {
+        return this.workFor === "stations";
+      },
     },
     salary: {
       type: Number,
@@ -172,8 +180,8 @@ const userSchema = new Schema(
     },
     availability: {
       type: String,
-      default: "loggedOut",
       enum: ["loggedIn", "loggedOut"],
+      default: "loggedOut",
     },
     isActive: {
       type: Boolean,
