@@ -26,6 +26,10 @@ const attendanceSchema = new Schema(
       type: String,
       default: "00:00 Hrs",
     },
+    fullDay:{
+      type:Boolean,
+      default:false
+    },
     status: {
       type: String,
       enum: ["On Time", "Late", "Absent", "Day Off"],
@@ -108,48 +112,41 @@ const attendanceSchema = new Schema(
 attendanceSchema.pre("save", async function (next) {
   const Attendance = this;
 
-  // Get user.workFor info
   const user = await mongoose
     .model("User")
     .findById(Attendance.user)
     .select("workFor");
+
   if (!user) return next(new Error("User not found"));
 
   const dayOfWeek = Attendance.date.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
   const isCompany = user.workFor === "company";
   const isStation = user.workFor === "stations";
 
-  // 📌 Handle Day Offs
+  //Handle Day Offs
   if (
     (isCompany && (dayOfWeek === 5 || dayOfWeek === 6)) ||
     (isStation && dayOfWeek === 5)
   ) {
     Attendance.status = "Day Off";
     Attendance.workingHours = "00:00 Hrs";
-    return next(); // Skip rest of the logic
+    Attendance.fullDay = false;
+    return next();
   }
 
-  // ✅ Continue if it's a working day
+  //Continue if it's a working day
   const checkInTime = new Date(
     `1970-01-01T${convertTo24Hour(Attendance.checkIn)}:00`
   );
 
-  if (isStation) {
-    const shiftType = Attendance.checkIn.includes("AM") ? "Night" : "Day";
-    const shiftDeadline =
-      shiftType === "Night"
-        ? new Date("1970-01-01T00:00:00")
-        : new Date("1970-01-01T12:00:00");
-
-    Attendance.status = checkInTime > shiftDeadline ? "Late" : "On Time";
-  }
-
   if (isCompany) {
     const companyStart = new Date("1970-01-01T09:00:00");
     Attendance.status = checkInTime > companyStart ? "Late" : "On Time";
+  } else if (isStation) {
+    Attendance.status = "On Time";
   }
 
-  // ⏱ Calculate working hours
+  //Calculate working hours and fullDay
   if (Attendance.checkOut) {
     let checkOutTime = new Date(
       `1970-01-01T${convertTo24Hour(Attendance.checkOut)}:00`
@@ -159,12 +156,16 @@ attendanceSchema.pre("save", async function (next) {
     }
 
     const totalMinutes = Math.floor((checkOutTime - checkInTime) / 1000 / 60);
-    if (totalMinutes > 0) {
-      const hours = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
-      const minutes = String(totalMinutes % 60).padStart(2, "0");
-      Attendance.workingHours = `${hours}:${minutes} Hrs`;
-    } else {
-      Attendance.workingHours = "00:00 Hrs";
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    Attendance.workingHours = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} Hrs`;
+
+    //Full Day logic
+    if (isStation) {
+      Attendance.fullDay = totalMinutes >= 720; // 12 hours
+    } else if (isCompany) {
+      Attendance.fullDay = totalMinutes >= 600; // 10 hours
     }
   }
 
