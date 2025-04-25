@@ -22,6 +22,10 @@ router.post(
     auth(["employee"]),
    stationController.addPump
   );
+//get pump
+router.get("/getPumps/:stationId",
+  stationController.getPumps
+)
 
 //get gasoline pump types
 router.get(
@@ -43,5 +47,16 @@ router.get(
   "/getAllStations",
  stationController.getAllStations
 );
+
+//get Sp station
+router.get(
+  "/getSpStation/:stationId",
+ stationController.getSpStation
+);
+
+//update station 
+router.patch("/updateStation/:stationId",
+  stationController.updateStation
+)
 
 export default router;

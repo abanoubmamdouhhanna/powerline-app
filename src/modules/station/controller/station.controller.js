@@ -36,8 +36,8 @@ export const addPump = asyncHandler(async (req, res, next) => {
       )
     );
   }
-  // const isStationValid = await stationModel.exists({ _id: station });
-  // if (!isStationValid) return next(new Error( "Station not found.", { cause: 404 }));
+  const isStationValid = await stationModel.exists({ _id: station });
+  if (!isStationValid) return next(new Error( "Station not found.", { cause: 404 }));
 
   const validGasolines = await gasolineTypeModel.find({
     _id: { $in: pistolTypes },
@@ -53,6 +53,20 @@ export const addPump = asyncHandler(async (req, res, next) => {
     result: pump,
   });
 });
+//====================================================================================================================//
+//get pump
+export const getPumps=asyncHandler(async(req,res,next)=>
+{
+  const {stationId} = req.params
+  const station =await stationModel.findOne({_id:stationId})
+  if (!station)
+    return next(new Error("Station not found", { cause: 404 }));
+  const allPumps=await pumpModel.find({station:stationId})
+  return res.status(200).json({
+    status: "success",
+    result: allPumps,
+  });
+})
 
 //====================================================================================================================//
 //get gasoline types for pump
@@ -72,7 +86,7 @@ export const getPumpTypes = asyncHandler(async (req, res, next) => {
       select: "gasolineName",
       model: "GasolineType",
     });
-  return res.status(201).json({
+  return res.status(200).json({
     status: "success",
     result: pump,
   });
@@ -210,14 +224,75 @@ export const addStation = asyncHandler(async (req, res, next) => {
 //get all stations
 export const getAllStations = asyncHandler(async (req, res, next) => {
   const stations = await stationModel
-    .find({}, "stationName employees")
-    .populate("stationEmployees", "name imageUrl permissions");
-    const enrichedStations = stations.map((station) => ({
-      ...station._doc,
-      employeeCount: station.stationEmployees.length,
-    }));
+    .find({}, 'stationName employees')
+    .populate('stationEmployees', 'name imageUrl permissions');
+
+  const enrichedStations = stations.map((station) => ({
+    _id: station._id,
+    stationName: station.stationName,
+    stationEmployees: station.stationEmployees,
+    employeeCount: station.stationEmployees.length,
+  }));
+
   return res.status(200).json({
-    message: "SUccess",
-    result: stations,
+    message: 'Success',
+    result: enrichedStations,
+  });
+});
+//====================================================================================================================//
+//get sp station
+export const getSpStation=asyncHandler(async(req,res,next)=>
+{
+  const {stationId}=req.params
+  const station =await stationModel.findOne({_id:stationId})
+  if (!station)
+    return next(new Error("Station not found", { cause: 404 }));
+  return res.status(200).json({
+    message: 'Success',
+    result: station,
+  });
+
+})
+//====================================================================================================================//
+//update station 
+export const updateStation = asyncHandler(async (req, res, next) => {
+  const { stationId } = req.params; // assuming you're passing station ID via URL params
+  const {
+    stationName,
+    stationAddress,
+    noOfPumps,
+    noOfPistol,
+    supplier,
+    noOfGreenPistol,
+    noOfRedPistol,
+    noOfDieselPistol,
+  } = req.body;
+
+  const formattedStationName = stationName ? capitalizeWords(stationName) : undefined;
+
+  const updatedFields = {
+    ...(formattedStationName && { stationName: formattedStationName }),
+    ...(stationAddress && { stationAddress }),
+    ...(noOfPumps !== undefined && { noOfPumps }),
+    ...(noOfPistol !== undefined && { noOfPistol }),
+    ...(supplier && { supplier }),
+    ...(noOfGreenPistol !== undefined && { noOfGreenPistol }),
+    ...(noOfRedPistol !== undefined && { noOfRedPistol }),
+    ...(noOfDieselPistol !== undefined && { noOfDieselPistol }),
+  };
+
+  const updatedStation = await stationModel.findByIdAndUpdate(
+   { _id:stationId},
+    { $set: updatedFields },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedStation) {
+    return next(new Error("Station not found", { cause: 404 }));
+  }
+
+  return res.status(200).json({
+    message: 'Station updated successfully',
+    result: updatedStation,
   });
 });
