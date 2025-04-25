@@ -5,7 +5,10 @@ import stationModel from "../../../../DB/models/Station.model.js";
 import { getTranslation } from "../../../middlewares/language.middleware.js";
 import { capitalizeWords } from "../../../utils/capitalize.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
-import { uploadImageCloudinary, uploadToCloudinary } from "../../../utils/cloudinaryHelpers.js";
+import {
+  uploadImageCloudinary,
+  uploadToCloudinary,
+} from "../../../utils/cloudinaryHelpers.js";
 
 // add gasoline type
 export const addGasoline = asyncHandler(async (req, res, next) => {
@@ -54,13 +57,16 @@ export const addPump = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //get gasoline types for pump
 export const getPumpTypes = asyncHandler(async (req, res, next) => {
-  const { pumpId ,stationId } = req.body;
+  const { pumpId, stationId } = req.body;
 
-  const isPumpValid = await pumpModel.exists({ _id: pumpId,station:stationId });
-  if (!isPumpValid) return next(new Error( "Pump not found.", { cause: 404 }));
+  const isPumpValid = await pumpModel.exists({
+    _id: pumpId,
+    station: stationId,
+  });
+  if (!isPumpValid) return next(new Error("Pump not found.", { cause: 404 }));
 
   const pump = await pumpModel
-    .findOne({ _id: pumpId,station:stationId }, "pistolTypes")
+    .findOne({ _id: pumpId, station: stationId }, "pistolTypes")
     .populate({
       path: "pistolTypes",
       select: "gasolineName",
@@ -73,87 +79,6 @@ export const getPumpTypes = asyncHandler(async (req, res, next) => {
 });
 //====================================================================================================================//
 // add station
-// export const addStation=asyncHandler(async(req,res,next)=>
-// {
-//   const {stationName,stationAddress,noOfPumps,noOfPistol,supplier,noOfGreenPistol,noOfRedPistol,
-//     noOfDieselPistol, documents: documentsData, stores: storesData,
-//   }=req.body
-//     const formattedStationName = capitalizeWords(stationName);
-//       const customId = nanoid();
-    
-//     const uploadedFiles = req.files || {};
-//   // Process document uploads in parallel
-
-//   const processedDocuments = Array.isArray(documentsData)
-//     ? await Promise.all(
-//         documentsData.map(async (doc, i) => {
-//           const { title, start, end } = doc;
-
-//           if (!title || !start || !end) {
-//             throw new Error(
-//               "Each document must have title, start date, and end date"
-//             );
-//           }
-
-//           const files = uploadedFiles[`documentFiles_${i}`] || [];
-//           const folder = `${process.env.APP_NAME}/Stations/${customId}/documents/document_${i}`;
-
-//           const fileUploads = await Promise.all(
-//             files.map((file) =>
-//               uploadToCloudinary(
-//                 file,
-//                 folder,
-//                 `${customId}_document_${i}_${file.originalname}`
-//               )
-//             )
-//           );
-
-//           return {
-//             title,
-//             start: new Date(start),
-//             end: new Date(end),
-//             files: fileUploads,
-//           };
-//         })
-//       )
-//     : [];
-
-    
-//   const processedStores = Array.isArray(storesData)
-//   ? await Promise.all(
-//       storesData.map(async (doc, i) => {
-//         const { title, start, end } = doc;
-
-//         if (!title || !start || !end) {
-//           throw new Error(
-//             "Each document must have title, start date, and end date"
-//           );
-//         }
-
-//         const files = uploadedFiles[`documentFiles_${i}`] || [];
-//         const folder = `${process.env.APP_NAME}/Stations/${customId}/documents/document_${i}`;
-
-//         const fileUploads = await Promise.all(
-//           files.map((file) =>
-//             uploadToCloudinary(
-//               file,
-//               folder,
-//               `${customId}_document_${i}_${file.originalname}`
-//             )
-//           )
-//         );
-
-//         return {
-//           title,
-//           start: new Date(start),
-//           end: new Date(end),
-//           files: fileUploads,
-//         };
-//       })
-//     )
-//   : [];
-// })
-
 export const addStation = asyncHandler(async (req, res, next) => {
   const {
     stationName,
@@ -242,12 +167,10 @@ export const addStation = asyncHandler(async (req, res, next) => {
           // 4b. shopImage (optional)
           const shopImageFile = uploadedFiles[`shopImage_${i}`]?.[0] || null;
           const shopImage = shopImageFile
-            ? (
-                await uploadImageCloudinary(
-                  shopImageFile,
-                  `${baseFolder}/shopImage`,
-                  `${customId}_storeImage`
-                )
+            ? await uploadImageCloudinary(
+                shopImageFile,
+                `${baseFolder}/shopImage`,
+                `${customId}_storeImage`
               )
             : null;
 
@@ -277,8 +200,24 @@ export const addStation = asyncHandler(async (req, res, next) => {
     stores: processedStores,
   });
 
- return res.status(201).json({
+  return res.status(201).json({
     message: "Station added successfully",
     result: newStation,
+  });
+});
+
+//====================================================================================================================//
+//get all stations
+export const getAllStations = asyncHandler(async (req, res, next) => {
+  const stations = await stationModel
+    .find({}, "stationName employees")
+    .populate("stationEmployees", "name imageUrl permissions");
+    const enrichedStations = stations.map((station) => ({
+      ...station._doc,
+      employeeCount: station.stationEmployees.length,
+    }));
+  return res.status(200).json({
+    message: "SUccess",
+    result: stations,
   });
 });

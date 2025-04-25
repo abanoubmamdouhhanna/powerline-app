@@ -38,4 +38,10 @@ router.post(
   stationController.addStation
 );
 
+//get all stations
+router.get(
+  "/getAllStations",
+ stationController.getAllStations
+);
+
 export default router;

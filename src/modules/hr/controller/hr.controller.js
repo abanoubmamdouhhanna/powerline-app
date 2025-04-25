@@ -159,7 +159,7 @@ export const logIn = asyncHandler(async (req, res, next) => {
       $or: [{ phone: phoneOrEmail }, { email: phoneOrEmail }],
     })
     .select(
-      "name password phone email employeeCode status role imageUrl isActive"
+      "name password phone email station employeeCode status role imageUrl isActive"
     );
   if (!user) {
     return next(
