@@ -268,6 +268,16 @@ export const ValidationErrors = {
     ar: "وقت العمل مطلوب",
     bn: "কাজের সময় প্রয়োজন",
   },
+  WORK_FOR_STRING: {
+    en: "Work for must be a valid string",
+    ar: "يجب أن تكون جهة العمل نصًا صالحًا",
+    bn: "কোন জন্য কাজ করছেন সেটি অবশ্যই একটি বৈধ স্ট্রিং হতে হবে",
+  },
+  WORK_FOR_REQUIRED: {
+    en: "Work for is required",
+    ar: "جهة العمل مطلوبة",
+    bn: "কোন জন্য কাজ করছেন তা প্রয়োজন",
+  },
   INVALID_JOINING_DATE: {
     en: "Joining date must be a valid date",
     ar: "يجب أن يكون تاريخ الانضمام تاريخًا صالحًا",

@@ -72,7 +72,7 @@ const userSchema = new Schema(
     gender: {
       type: String,
       enum: ["male", "female"],
-      default:"male"
+      default: "male",
     },
     nationality: {
       type: String,
@@ -113,7 +113,7 @@ const userSchema = new Schema(
     workFor: {
       type: String,
       enum: ["stations", "company"],
-      default:"stations"
+      default: "stations",
     },
     station: {
       type: Types.ObjectId,
@@ -129,8 +129,8 @@ const userSchema = new Schema(
     },
     timeWork: {
       type: String,
-      enum: ["day", "night"],
-      default:"day"
+      enum: ["Full-time", "Part-time"],
+      default: "Full-time",
     },
     joiningDate: {
       type: Date,

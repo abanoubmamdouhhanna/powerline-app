@@ -3,6 +3,7 @@ import * as stationController from "./controller/station.controller.js";
 import { auth } from "../../middlewares/auth.middleware.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
 import { headersSchema } from "./controller/station.valdation.js";
+import { flexibleDocumentUpload } from "../../utils/multerCloudinary.js";
 
 const router = Router();
 
@@ -29,4 +30,12 @@ router.get(
   auth(["employee"]),
  stationController.getPumpTypes
 );
+
+//add station
+router.post(
+  "/addStation",
+  flexibleDocumentUpload(5, 25),
+  stationController.addStation
+);
+
 export default router;

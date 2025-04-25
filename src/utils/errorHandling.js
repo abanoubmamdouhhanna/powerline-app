@@ -48,7 +48,7 @@ export const glopalErrHandling = (error, req, res, next) => {
     errorTranslations[error.message]?.["en"] ||
     error.message;
 
-  const statusCode = error.statusCode || 500;
+  const statusCode = error.cause || 500;
 
   const errorResponse = {
     message: errorMessage,

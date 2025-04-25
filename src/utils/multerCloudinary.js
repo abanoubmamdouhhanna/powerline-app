@@ -2,8 +2,9 @@ import multer from "multer";
 import { asyncHandler } from "./errorHandling.js";
 import { dangerousExtensions } from "./dangerousExtensions.js";
 
+// Define allowed MIME types by base field name
 export const allowedTypesMap = (() => {
-  const imageTypes = [
+  const baseImageTypes = [
     "image/png",
     "image/jpeg",
     "image/jpg",
@@ -12,46 +13,64 @@ export const allowedTypesMap = (() => {
     "image/svg+xml",
   ];
 
-  const docTypes = [
+  const baseDocTypes = [
     "application/pdf",
     "application/msword", // .doc
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
     "application/vnd.rar", // .rar
     "application/zip", // .zip
-    ...imageTypes,
   ];
 
   return {
-    profilePic: imageTypes,
-    documentFiles: docTypes, // Generic document files type
-    documents: docTypes,
-    cleaningImages: imageTypes,
-    inventoryImages: imageTypes,
+    profilePic: baseImageTypes,
+    cleaningImages: baseImageTypes,
+    inventoryImages: baseImageTypes,
+    shopImage: baseImageTypes,
+    documentFiles: [...baseDocTypes, ...baseImageTypes],
+    documents: [...baseDocTypes, ...baseImageTypes],
+    leaseDoc: [...baseDocTypes, ...baseImageTypes],
   };
 })();
 
+// Get base field name (e.g., "documentFiles" from "documentFiles_0")
+const getBaseFieldName = (fieldname) => {
+  const match = fieldname.match(/^([a-zA-Z]+)/); // Extract prefix before underscore/digit
+  return match ? match[1] : fieldname;
+};
+
+// File validation middleware
 const fileValidation = (allowedTypesMap = {}) => {
   return asyncHandler(async (req, file, cb) => {
     const fileExtension = file.originalname.split(".").pop().toLowerCase();
 
     if (dangerousExtensions.includes(fileExtension)) {
       return cb(
-        new Error(`File type '${fileExtension}' not allowed`, { cause: 400 }),
+        new Error(
+          `File type '${fileExtension}' not allowed (dangerous extension)`,
+          { cause: 400 }
+        ),
         false
       );
     }
 
-    const allAllowedMimes = new Set([
-      ...allowedTypesMap.profilePic,
-      ...allowedTypesMap.cleaningImages,
-      ...allowedTypesMap.inventoryImages,
-      ...allowedTypesMap.documentFiles,
-      ...allowedTypesMap.documents,
-    ]);
+    const baseFieldName = getBaseFieldName(file.fieldname);
+    const allowedMimesForField = allowedTypesMap[baseFieldName];
 
-    if (!allAllowedMimes.has(file.mimetype)) {
+    if (!allowedMimesForField) {
       return cb(
-        new Error(`File type '${file.mimetype}' not allowed`, { cause: 400 }),
+        new Error(`Field '${file.fieldname}' is not allowed for file uploads`, {
+          cause: 400,
+        }),
+        false
+      );
+    }
+
+    if (!allowedMimesForField.includes(file.mimetype)) {
+      return cb(
+        new Error(
+          `MIME type '${file.mimetype}' is not allowed for field '${file.fieldname}'`,
+          { cause: 400 }
+        ),
         false
       );
     }
@@ -60,15 +79,15 @@ const fileValidation = (allowedTypesMap = {}) => {
   });
 };
 
+// File upload config
 export function fileUpload(size, allowedTypesMap) {
   const storage = multer.diskStorage({});
-  const limits = { fileSize: size * 1024 * 1024 };
+  const limits = { fileSize: size * 1024 * 1024 }; // Size in MB
   const fileFilter = fileValidation(allowedTypesMap);
-  const upload = multer({ fileFilter, storage, limits });
-  return upload;
+  return multer({ fileFilter, storage, limits });
 }
 
-// Use any() to accept any number of files with any field names
+// Flexible upload with any() and dynamic field support
 export function flexibleDocumentUpload(size = 5, maxTotalFiles = 5) {
   return (req, res, next) => {
     const upload = fileUpload(size, allowedTypesMap).any();
@@ -76,16 +95,13 @@ export function flexibleDocumentUpload(size = 5, maxTotalFiles = 5) {
     upload(req, res, (err) => {
       if (err) return next(err);
 
-      // Verify we don't exceed the maximum number of files
       if (req.files && req.files.length > maxTotalFiles) {
         return next(
           new Error(`Maximum of ${maxTotalFiles} files allowed`, { cause: 400 })
         );
       }
 
-      // Organize files by field name for easier access in the controller
       const organizedFiles = {};
-
       if (req.files && req.files.length > 0) {
         req.files.forEach((file) => {
           if (!organizedFiles[file.fieldname]) {
@@ -95,9 +111,7 @@ export function flexibleDocumentUpload(size = 5, maxTotalFiles = 5) {
         });
       }
 
-      // Replace req.files with our organized structure
       req.files = organizedFiles;
-
       next();
     });
   };

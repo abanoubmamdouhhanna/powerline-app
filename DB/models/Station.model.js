@@ -1,30 +1,38 @@
 import mongoose, { model, Schema, Types } from "mongoose";
 
-// 🔹 Sub-schema: Document
-const documentSchema = new Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    files: [
-      {
-        type: String,
-      },
-    ],
-    start: {
-      type: Date,
-      required: true,
-    },
-    end: {
-      type: Date,
-      required: true,
-    },
+// 🔹 Document Sub-schema
+const documentSchema = new Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
   },
-  { _id: false, timestamps: false }
-);
-
+  files: [
+    {
+      secure_url: {
+        type: String,
+        required: true,
+      },
+      public_id: {
+        type: String,
+        required: true,
+      },
+      resource_type: {
+        type: String,
+        required: true,
+        enum: ["image", "raw"], // optional but safe
+      },
+    },
+  ],
+  start: {
+    type: Date,
+    required: true,
+  },
+  end: {
+    type: Date,
+    required: true,
+  },
+});
 // 🔹 Sub-schema: Shop
 const shopSchema = new Schema(
   {
@@ -42,21 +50,33 @@ const shopSchema = new Schema(
       required: true,
       trim: true,
     },
-    lease: {
-      type: String,
-      trim: true,
+    leaseDoc: {
+        secure_url: {
+          type: String,
+          required: true,
+        },
+        public_id: {
+          type: String,
+          required: true,
+        },
+        resource_type: {
+          type: String,
+          required: true,
+          enum: ["image", "raw"], // optional but safe
+        },
     },
     residenceExpiryDate: {
       type: Date,
       required: true,
     },
   },
-  { _id: false, timestamps: false }
+  { timestamps: false }
 );
 
 // 🔹 Main Schema: Station
 const stationSchema = new Schema(
   {
+    customId: String,
     employees: [
       {
         type: Types.ObjectId,
@@ -83,10 +103,10 @@ const stationSchema = new Schema(
       required: true,
       min: 0,
     },
-    supplierName: {
-      type: String,
+    supplier: {
+      type: Types.ObjectId,
+      ref: "Supplier",
       required: true,
-      trim: true,
     },
     noOfGreenPistol: {
       type: Number,
@@ -149,6 +169,11 @@ stationSchema.virtual("gasolinePrice", {
   ref: "Gasoline",
   localField: "_id",
   foreignField: "station",
+});
+stationSchema.virtual("suplierDetails", {
+  ref: "Supplier",
+  localField: "supplier",
+  foreignField: "_id",
 });
 
 // 🔹 Model Export

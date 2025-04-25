@@ -121,14 +121,7 @@ export const createEmployeeSchema = (lang = "en") =>
 
       permissions: generalFields(lang).id,
 
-      station: joi
-        .string()
-        .required()
-        .messages({
-          "string.base": getMessage("STATION_STRING", lang),
-          "string.empty": getMessage("STATION_REQUIRED", lang),
-          "any.required": getMessage("STATION_REQUIRED", lang),
-        }),
+      station: generalFields(lang).id,
 
       salary: joi
         .number()
@@ -148,7 +141,14 @@ export const createEmployeeSchema = (lang = "en") =>
           "string.empty": getMessage("TIME_WORK_REQUIRED", lang),
           "any.required": getMessage("TIME_WORK_REQUIRED", lang),
         }),
-
+      workFor: joi
+        .string()
+        .required()
+        .messages({
+          "string.base": getMessage("WORK-FOR_STRING", lang),
+          "string.empty": getMessage("WORK-FOR_REQUIRED", lang),
+          "any.required": getMessage("WORK-FOR_REQUIRED", lang),
+        }),
       joiningDate: joi
         .date()
         .required()

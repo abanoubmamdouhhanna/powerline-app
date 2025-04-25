@@ -14,6 +14,7 @@ import cloudinary from "../../../utils/cloudinary.js";
 import attendanceModel from "../../../../DB/models/Attendance.model.js";
 import cleaningTaskModel from "../../../../DB/models/CleaningTask.model.js";
 import inventoryTaskModel from "../../../../DB/models/InventoryTask.model.js";
+import stationModel from "../../../../DB/models/Station.model.js";
 
 //create Employee
 export const createEmployee = asyncHandler(async (req, res, next) => {
@@ -45,15 +46,17 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
   const customId = nanoid();
 
   // Check for duplicates in parallel
-  const [existingEmail, existingPhone] = await Promise.all([
+  const [existingEmail, existingPhone, existingStation] = await Promise.all([
     userModel.findOne({ email }),
     userModel.findOne({ phone }),
+    stationModel.findOne({ _id: station }),
   ]);
-
   if (existingEmail)
     return next(new Error("Email already exists", { cause: 401 }));
   if (existingPhone)
     return next(new Error("Phone number already exists", { cause: 401 }));
+  if (!existingStation)
+    return next(new Error("Station not found", { cause: 404 }));
 
   const uploadedFiles = req.files || {};
 
@@ -128,6 +131,8 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
     residenceExpiryDate,
     documents: processedDocuments,
   });
+  existingStation.employees.push(newEmployee._id);
+  await existingStation.save();
 
   return res.status(201).json({
     message: getTranslation("Account created successfully", req.language),
@@ -156,8 +161,15 @@ export const logIn = asyncHandler(async (req, res, next) => {
     .select(
       "name password phone email employeeCode status role imageUrl isActive"
     );
+  if (!user) {
+    return next(
+      new Error("User not found", {
+        cause: 404,
+      })
+    );
+  }
 
-  if (!user.isActive) {
+  if (!user?.isActive) {
     return next(
       new Error("Account is deactivated by admin. Please contact support", {
         cause: 403,
@@ -524,15 +536,20 @@ export const userAttendance = asyncHandler(async (req, res, next) => {
 });
 //====================================================================================================================//
 //get job tasks
-export const getJobTasks =asyncHandler(async(req,res,next)=>
-{
-  const {userId}=req.params
+export const getJobTasks = asyncHandler(async (req, res, next) => {
+  const { userId } = req.params;
   const user = await userModel.findById(userId);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
-  const cleaningTasks=await cleaningTaskModel.find({user:userId},"subTask date time location employeeName cleaningImages")
-  const inventoryTasks=await inventoryTaskModel.find({user:userId},"subTask date time location employeeName inventoryImages")
+  const cleaningTasks = await cleaningTaskModel.find(
+    { user: userId },
+    "subTask date time location employeeName cleaningImages"
+  );
+  const inventoryTasks = await inventoryTaskModel.find(
+    { user: userId },
+    "subTask date time location employeeName inventoryImages"
+  );
 
   return res.status(200).json({
     status: "success",
@@ -541,4 +558,4 @@ export const getJobTasks =asyncHandler(async(req,res,next)=>
       inventoryTasks,
     },
   });
-})
+});
