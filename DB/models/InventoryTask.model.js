@@ -13,13 +13,6 @@ const inventoryTaskSchema = new Schema(
       required: true,
     },
     subTask: { type: String, default:"Station Inventory" },
-    // Pump: { type: Types.ObjectId, ref: "Pump" },
-    // Pistol: { type: Types.ObjectId, ref: "GasolineType" },
-    // counterNumber: {
-    //   type: Number,
-    //   required: true,
-    //   min: 0,
-    // },
     pumps: [
       {
         pump: { type: Types.ObjectId, ref: "Pump", required: true },

@@ -37,37 +37,64 @@ router.get(
 router.post(
   "/addStation",
   flexibleDocumentUpload(5, 25),
+  auth(["employee"]),
   stationController.addStation
 );
 
 //get all stations
-router.get("/getAllStations", stationController.getAllStations);
+router.get(
+  "/getAllStations",
+  auth(["employee"]),
+  stationController.getAllStations
+);
 
 //get Sp station
-router.get("/getSpStation/:stationId", stationController.getSpStation);
+router.get(
+  "/getSpStation/:stationId",
+  auth(["employee"]),
+  stationController.getSpStation
+);
 
 //update station
-router.patch("/updateStation/:stationId", stationController.updateStation);
+router.patch(
+  "/updateStation/:stationId",
+  auth(["employee"]),
+  stationController.updateStation
+);
 
 //delete station
-router.delete("/deleteStation/:stationId", stationController.deleteStation);
+router.delete(
+  "/deleteStation/:stationId",
+  auth(["employee"]),
+  stationController.deleteStation
+);
 
 //delete specific document
-router.delete("/deleteDocument", stationController.deleteDocument);
+router.delete(
+  "/deleteDocument",
+  auth(["employee"]),
+  stationController.deleteDocument
+);
 
 // add new document
 router.post(
   "/addStationDocument",
   flexibleDocumentUpload(5, 5),
+  auth(["employee"]),
   stationController.addStationDocument
 );
 //delete store
-router.delete("/deleteStore", stationController.deleteStore);
+router.delete(
+  "/deleteStore",
+  auth(["employee"]),
+  stationController.deleteStore
+);
 
 // add new store
 router.post(
   "/addStationStore",
   flexibleDocumentUpload(5, 5),
+  auth(["employee"]),
   stationController.addStationStore
 );
 

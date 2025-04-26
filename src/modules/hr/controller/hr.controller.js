@@ -536,26 +536,120 @@ export const userAttendance = asyncHandler(async (req, res, next) => {
 });
 //====================================================================================================================//
 //get job tasks
+// export const getJobTasks = asyncHandler(async (req, res, next) => {
+//   const { userId } = req.params;
+//   const user = await userModel.findById(userId);
+//   if (!user) {
+//     return next(new Error("User not found", { cause: 404 }));
+//   }
+//   const cleaningTasks = await cleaningTaskModel.find(
+//     { user: userId },
+//     "subTask date time location employeeName cleaningImages"
+//   );
+
+//  const inventoryTasks = await inventoryTaskModel.find(
+//   { user: userId },
+//   "subTask date time location employeeName inventoryImages pumps"
+// )
+// .populate({
+//   path: "pumps.pump",
+//   select: "pumpName"
+// })
+// .populate({
+//   path: "pumps.pistols.pistol",
+//   select: "gasolineName"
+// });
+
+// // Now transform the result
+// const transformedTasks = inventoryTasks.map(task => {
+//   const transformedPumps = task.pumps.map(pumpItem => ({
+//     _id: pumpItem._id,
+//     pump: pumpItem.pump?.pumpName || null, // instead of whole pump object, take pumpName
+//     pistols: pumpItem.pistols.map(pistolItem => ({
+//       _id: pistolItem._id,
+//       pistol: pistolItem.pistol?.gasolineName || null, // instead of whole pistol object, take gasolineName
+//       counterNumber: pistolItem.counterNumber
+//     }))
+//   }));
+
+//   return {
+//     _id: task._id,
+//     subTask: task.subTask,
+//     date: task.date,
+//     time: task.time,
+//     location: task.location,
+//     employeeName: task.employeeName,
+//     inventoryImages: task.inventoryImages,
+//     pumps: transformedPumps
+//   };
+// });
+
+// // Finally, send `transformedTasks` instead of `inventoryTasks`
+// res.json(transformedTasks);
+
+//   return res.status(200).json({
+//     status: "success",
+//     data: {
+//       cleaningTasks,
+//       inventoryTasks,
+//     },
+//   });
+// });
 export const getJobTasks = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
+
+  // 1. Find user
   const user = await userModel.findById(userId);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
+
+  // 2. Fetch cleaning tasks
   const cleaningTasks = await cleaningTaskModel.find(
     { user: userId },
     "subTask date time location employeeName cleaningImages"
   );
-  const inventoryTasks = await inventoryTaskModel.find(
-    { user: userId },
-    "subTask date time location employeeName inventoryImages"
-  );
 
+  // 3. Fetch inventory tasks with populated pumps and pistols
+  const inventoryTasksRaw = await inventoryTaskModel.find(
+    { user: userId },
+    "subTask date time location employeeName inventoryImages pumps"
+  )
+    .populate({
+      path: "pumps.pump",
+      select: "pumpName"
+    })
+    .populate({
+      path: "pumps.pistols.pistol",
+      select: "gasolineName"
+    });
+
+  // 4. Transform inventory tasks
+  const inventoryTasks = inventoryTasksRaw.map(task => ({
+    _id: task._id,
+    subTask: task.subTask,
+    date: task.date,
+    time: task.time,
+    location: task.location,
+    employeeName: task.employeeName,
+    inventoryImages: task.inventoryImages,
+    pumps: task.pumps.map(pumpItem => ({
+      _id: pumpItem._id,
+      pump: pumpItem.pump?.pumpName || null,
+      pistols: pumpItem.pistols.map(pistolItem => ({
+        _id: pistolItem._id,
+        pistol: pistolItem.pistol?.gasolineName || null,
+        counterNumber: pistolItem.counterNumber
+      }))
+    }))
+  }));
+
+  // 5. Send final response
   return res.status(200).json({
     status: "success",
     data: {
       cleaningTasks,
-      inventoryTasks,
-    },
+      inventoryTasks
+    }
   });
 });
