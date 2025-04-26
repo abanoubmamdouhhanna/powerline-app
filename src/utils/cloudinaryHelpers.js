@@ -90,3 +90,33 @@ export const deleteFromCloudinary = async (folderPath) => {
     });
   });
 };
+
+//====================================================================================================================//
+//destoy from image URL
+export const destroyCloudinaryFileFromUrl = async (url) => {
+  try {
+    // Remove base URL and version part
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+
+    const parts = pathname.split("/");
+    const versionIndex = parts.findIndex((part) => /^v\d+$/.test(part));
+
+    if (versionIndex === -1)
+      throw new Error("Invalid Cloudinary URL: version segment not found.");
+
+    const publicIdWithExt = parts.slice(versionIndex + 1).join("/");
+    const publicId = publicIdWithExt.replace(/\.[^/.]+$/, ""); // remove extension
+
+    // Destroy the file
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "image", // or "raw", if needed
+    });
+
+    console.log("Cloudinary destroy result:", result);
+    return result;
+  } catch (err) {
+    console.error("Failed to destroy file from Cloudinary:", err);
+    throw err;
+  }
+};

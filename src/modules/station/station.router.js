@@ -12,27 +12,25 @@ router.post(
   "/addGasoline",
   isValid(headersSchema, true),
   auth(["employee"]),
- stationController.addGasoline
+  stationController.addGasoline
 );
 
 // add pump
 router.post(
-    "/addPump",
-    isValid(headersSchema, true),
-    auth(["employee"]),
-   stationController.addPump
-  );
-//get pump
-router.get("/getPumps/:stationId",
-  stationController.getPumps
-)
+  "/addPump",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  stationController.addPump
+);
+//get pumps for station
+router.get("/getPumps/:stationId", stationController.getPumps);
 
 //get gasoline pump types
 router.get(
   "/getPumpTypes",
   isValid(headersSchema, true),
   auth(["employee"]),
- stationController.getPumpTypes
+  stationController.getPumpTypes
 );
 
 //add station
@@ -43,20 +41,34 @@ router.post(
 );
 
 //get all stations
-router.get(
-  "/getAllStations",
- stationController.getAllStations
-);
+router.get("/getAllStations", stationController.getAllStations);
 
 //get Sp station
-router.get(
-  "/getSpStation/:stationId",
- stationController.getSpStation
-);
+router.get("/getSpStation/:stationId", stationController.getSpStation);
 
-//update station 
-router.patch("/updateStation/:stationId",
-  stationController.updateStation
-)
+//update station
+router.patch("/updateStation/:stationId", stationController.updateStation);
+
+//delete station
+router.delete("/deleteStation/:stationId", stationController.deleteStation);
+
+//delete specific document
+router.delete("/deleteDocument", stationController.deleteDocument);
+
+// add new document
+router.post(
+  "/addStationDocument",
+  flexibleDocumentUpload(5, 5),
+  stationController.addStationDocument
+);
+//delete store
+router.delete("/deleteStore", stationController.deleteStore);
+
+// add new store
+router.post(
+  "/addStationStore",
+  flexibleDocumentUpload(5, 5),
+  stationController.addStationStore
+);
 
 export default router;

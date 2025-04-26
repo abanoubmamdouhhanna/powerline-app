@@ -51,19 +51,19 @@ const shopSchema = new Schema(
       trim: true,
     },
     leaseDoc: {
-        secure_url: {
-          type: String,
-          required: true,
-        },
-        public_id: {
-          type: String,
-          required: true,
-        },
-        resource_type: {
-          type: String,
-          required: true,
-          enum: ["image", "raw"], // optional but safe
-        },
+      secure_url: {
+        type: String,
+        required: true,
+      },
+      public_id: {
+        type: String,
+        required: true,
+      },
+      resource_type: {
+        type: String,
+        required: true,
+        enum: ["image", "raw"], // optional but safe
+      },
     },
     residenceExpiryDate: {
       type: Date,
