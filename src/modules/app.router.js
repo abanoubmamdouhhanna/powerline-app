@@ -7,6 +7,9 @@ import hrRouter from "./hr/hr.router.js";
 import stationRouter from "./station/station.router.js";
 import employeeRouter from "./employee/employee.router.js";
 import taskRouter from "./jobtask/jobTask.router.js";
+import contactRouter from "./contact/contact.router.js";
+import messageRouter from "./message/message.router.js"
+import groupRouter from "./group/group.router.js"
 
 const initApp = (app, express) => {
   // Built-in Middleware
@@ -21,6 +24,10 @@ const initApp = (app, express) => {
   app.use("/station", stationRouter);
   app.use("/employee", employeeRouter);
   app.use("/task", taskRouter);
+  app.use("/contact", contactRouter);
+  app.use("/message", messageRouter);
+  app.use("/group", groupRouter);
+
 
   // Catch-all for undefined routes
   app.use((req, res, next) => {
