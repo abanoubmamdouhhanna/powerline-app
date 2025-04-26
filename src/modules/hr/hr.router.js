@@ -28,7 +28,7 @@ router.post("/login", auth(["employee"]), isValid(logInSchema), hrController.log
 router.patch(
   "/logout",
   isValid(headersSchema, true),
-  auth(["admin", "user", "assistant"]),
+  auth(["admin", "employee", "assistant"]),
   hrController.logOut
 );
 // update employee
