@@ -3,7 +3,7 @@ import userModel from "../../../../DB/models/User.model.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
 
 //add make checkin and checkout
-export const checkIn = asyncHandler(async (req, res,next) => {
+export const checkIn = asyncHandler(async (req, res, next) => {
   const { checkIn, location } = req.body;
   const userId = req.user._id;
   const user = await userModel.findById(userId);
@@ -34,7 +34,7 @@ export const checkIn = asyncHandler(async (req, res,next) => {
 });
 //====================================================================================================================//
 //checkOut
-export const checkOut = asyncHandler(async (req, res,next) => {
+export const checkOut = asyncHandler(async (req, res, next) => {
   const { checkOut, location } = req.body;
   const userId = req.user._id;
   const user = await userModel.findById(userId);
@@ -58,5 +58,20 @@ export const checkOut = asyncHandler(async (req, res,next) => {
 
   await attendance.save(); // triggers workingHours calculation
 
-  res.status(200).json({ message: "Checked out successfully.", attendance });
+  return res
+    .status(200)
+    .json({ message: "Checked out successfully.", attendance });
+});
+//====================================================================================================================//
+export const profile = asyncHandler(async (req, res, next) => {
+  const employeeId = req.user._id;
+  const empProfile = await userModel
+    .findById(employeeId)
+    .select(
+      "name email phone age gender nationality address imageUrl workFor employeeCode"
+    );
+  if (!empProfile) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
+  return res.status(200).json({ message: "success", result: empProfile });
 });

@@ -7,4 +7,7 @@ const router = Router();
 router.post("/checkIn", auth(["employee"]), employeeController.checkIn);
 //checkOut
 router.post("/checkOut", auth(["employee"]), employeeController.checkOut);
+
+//profile
+router.get("/profile", auth(["employee"]), employeeController.profile)
 export default router;
