@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { uploadToCloudinary } from "../../../utils/cloudinaryHelpers.js"; // adjust import if needed
 import { asyncHandler } from "../../../utils/errorHandling.js";
 import toDoModel from "../../../../DB/models/ToDo.model.js";
+import { ApiFeatures } from '../../../utils/apiFeatures.js';
 
 // //create task
 export const createTask = asyncHandler(async (req, res, next) => {
@@ -103,5 +104,41 @@ export const changeStatus = asyncHandler(async (req, res, next) => {
   return res.status(200).json({
     message: "Task status updated successfully",
     result: updateTask,
+  });
+});
+//====================================================================================================================//
+//gat all tasks
+export const getAllTasks = asyncHandler(async (req, res, next) => {
+  const mongooseQuery = toDoModel.find({ createdBy: req.user._id });
+
+  // 🔥 Handle date fields in the request query
+  const dateFields = ['startDate', 'deadline'];
+
+  for (const field of dateFields) {
+    if (req.query[field]) {
+      for (const operator in req.query[field]) {
+        const value = req.query[field][operator];
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          req.query[field][operator] = new Date(value);
+        }
+      }
+    }
+  }
+
+  const apiFeatures = new ApiFeatures(mongooseQuery, req.query)
+    .filter()
+    // .search()
+    // .sort()
+    // .select();
+
+  const paginationResult = await apiFeatures.paginate();
+
+  const tasks = await apiFeatures.mongooseQuery;
+
+  return res.status(200).json({
+    message: "Success",
+    count: tasks.length,
+    pagination: paginationResult,
+    result: tasks,
   });
 });

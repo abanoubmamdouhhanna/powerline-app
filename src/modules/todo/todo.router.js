@@ -12,9 +12,13 @@ router.post(
   todoController.createTask
 );
 
-//get tasks
-router.get("/getTasks", auth(["employee"]),todoController.getTasks)
-export default router;
+//get tasks for user
+router.get("/getAllTasks", auth(["employee"]),todoController.getTasks)
 
 //change status
 router.patch("/changeStatus", auth(["employee"]),todoController.changeStatus)
+
+//get all tasks for admin
+router.get("/allTasks", auth(["employee"]),todoController.getAllTasks)
+
+export default router;
