@@ -15,3 +15,6 @@ router.post(
 //get tasks
 router.get("/getTasks", auth(["employee"]),todoController.getTasks)
 export default router;
+
+//change status
+router.patch("/changeStatus", auth(["employee"]),todoController.changeStatus)

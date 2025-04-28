@@ -91,3 +91,17 @@ export const getTasks = asyncHandler(async (req, res, next) => {
     result: tasks,
   });
 });
+//====================================================================================================================//
+//change status
+export const changeStatus = asyncHandler(async (req, res, next) => {
+  const { status, taskId } = req.body;
+  const updateTask = await toDoModel.findOneAndUpdate(
+    { _id: taskId, user: req.user._id },
+    { status },
+    { new: true }
+  );
+  return res.status(200).json({
+    message: "Task status updated successfully",
+    result: updateTask,
+  });
+});
