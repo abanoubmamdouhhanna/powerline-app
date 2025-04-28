@@ -1,5 +1,5 @@
 export const resTranslations = {
-  //auth module
+  //hr module
   "Your account confirmed successfully": {
     en: "Your account confirmed successfully",
     ar: "تم تأكيد حسابك بنجاح",

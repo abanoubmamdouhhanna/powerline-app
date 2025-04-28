@@ -10,6 +10,7 @@ import taskRouter from "./jobtask/jobTask.router.js";
 import contactRouter from "./contact/contact.router.js";
 import messageRouter from "./message/message.router.js"
 import groupRouter from "./group/group.router.js"
+import todoRouter from './todo/todo.router.js'
 
 const initApp = (app, express) => {
   // Built-in Middleware
@@ -27,6 +28,8 @@ const initApp = (app, express) => {
   app.use("/contact", contactRouter);
   app.use("/message", messageRouter);
   app.use("/group", groupRouter);
+  app.use("/todo", todoRouter);
+
 
 
   // Catch-all for undefined routes

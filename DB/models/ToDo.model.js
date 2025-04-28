@@ -1,7 +1,35 @@
 import mongoose, { Schema, Types, model } from "mongoose";
+
+// 🔹 Document Sub-schema
+const documentSchema = new Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  files: [
+    {
+      secure_url: {
+        type: String,
+        required: true,
+      },
+      public_id: {
+        type: String,
+        required: true,
+      },
+      resource_type: {
+        type: String,
+        required: true,
+        enum: ["image", "raw"], // optional but safe
+      },
+    },
+  ]
+});
+
 //tasks
 const toDoSchema = new Schema(
   {
+    customId:String,
     user: {
       type: Types.ObjectId,
       ref: "User",
@@ -33,6 +61,13 @@ const toDoSchema = new Schema(
     },
     comment: {
       type: String,
+    },
+    // 🔹 Documents
+    documents: [documentSchema],
+    createdBy: {
+      type: Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   {

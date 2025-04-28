@@ -22,7 +22,7 @@ router.post(
 );
 
 //login
-router.post("/login", auth(["employee"]), isValid(logInSchema), hrController.logIn);
+router.post("/login", isValid(logInSchema), hrController.logIn);
 
 //log out
 router.patch(
