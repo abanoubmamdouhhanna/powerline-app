@@ -15,8 +15,9 @@ const router = Router();
 //create employee
 router.post(
   "/createEmployee",
+  isValid(headersSchema, true),
+  auth(["employee"]),
   flexibleDocumentUpload(5, 25),
-   auth(["employee"]),
   isValid(createEmployeeSchema),
   hrController.createEmployee
 );
@@ -34,42 +35,57 @@ router.patch(
 // update employee
 router.patch(
   "/updateEmployee/:employeeId",
+  isValid(headersSchema, true),
+  auth(["employee"]),
   flexibleDocumentUpload(5, 1),
-   auth(["employee"]),
   isValid(updateEmployeeSchema),
   hrController.updateEmployee
 );
 // delete employee
-router.delete("/deleteEmployee/:employeeId", auth(["employee"]), hrController.deleteEmployee);
+router.delete(
+  "/deleteEmployee/:employeeId",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  hrController.deleteEmployee
+);
 
 //delete specific document
-router.delete("/deleteDocument", auth(["employee"]), hrController.deleteDocument);
+router.delete(
+  "/deleteDocument",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  hrController.deleteDocument
+);
 
 // add new document
 router.post(
   "/addUserDocument",
+  isValid(headersSchema, true),
+  auth(["employee"]),
   flexibleDocumentUpload(5, 5),
-   auth(["employee"]),
   hrController.addUserDocument
 );
 
 //get all employees
 router.get(
   "/getAllEmployees",
-   auth(["employee"]),
+  isValid(headersSchema, true),
+  auth(["employee"]),
   hrController.getAllEmployees
 );
 
 //user attendance
 router.get(
   "/userAttendance",
-   auth(["employee"]),
+  isValid(headersSchema, true),
+  auth(["employee"]),
   hrController.userAttendance
 );
 
 //get job tasks
 router.get(
   "/getJobTasks/:userId",
+  isValid(headersSchema, true),
   auth(["employee"]),
   hrController.getJobTasks
 );

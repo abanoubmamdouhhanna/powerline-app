@@ -2,11 +2,11 @@ import mongoose, { Schema, Types, model } from "mongoose";
 
 const supplierSchema = new Schema(
   {
+    customId:String,
     station: [
       {
         type: Types.ObjectId,
         ref: "Station",
-        required: true,
       },
     ],
     supplierName: {

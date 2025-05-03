@@ -29,6 +29,7 @@ export const allowedTypesMap = (() => {
     documentFiles: [...baseDocTypes, ...baseImageTypes],
     documents: [...baseDocTypes, ...baseImageTypes],
     leaseDoc: [...baseDocTypes, ...baseImageTypes],
+    supplierImage:baseImageTypes
   };
 })();
 

@@ -11,7 +11,7 @@ import contactRouter from "./contact/contact.router.js";
 import messageRouter from "./message/message.router.js"
 import groupRouter from "./group/group.router.js"
 import todoRouter from './todo/todo.router.js'
-import translateAutoDetect from "../../languages/api/translateAutoDetect.js";
+import supplierRouter from './supplier/supplier.router.js'
 
 const initApp = (app, express) => {
   // Built-in Middleware
@@ -30,6 +30,8 @@ const initApp = (app, express) => {
   app.use("/message", messageRouter);
   app.use("/group", groupRouter);
   app.use("/todo", todoRouter);
+  app.use("/supplier",supplierRouter);
+
 
  
   // Catch-all for undefined routes
