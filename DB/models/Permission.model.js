@@ -7,8 +7,9 @@ const permissionSchema = new Schema(
       ref: "User",
     }],
     permissionName: {
-      type: String,
-      required: true,
+      ar: { type: String, required: true },
+    en: { type: String, required: true },
+    bn: { type: String, required: true },
     },
     permissions: {
       // // Complaints Management

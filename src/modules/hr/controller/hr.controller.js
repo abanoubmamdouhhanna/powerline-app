@@ -15,8 +15,11 @@ import attendanceModel from "../../../../DB/models/Attendance.model.js";
 import cleaningTaskModel from "../../../../DB/models/CleaningTask.model.js";
 import inventoryTaskModel from "../../../../DB/models/InventoryTask.model.js";
 import stationModel from "../../../../DB/models/Station.model.js";
+import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
+import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
 
 //create Employee
+
 export const createEmployee = asyncHandler(async (req, res, next) => {
   const {
     name,
@@ -42,15 +45,21 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
     documents: documentsData,
   } = req.body;
 
-  const formattedName = capitalizeWords(name);
   const customId = nanoid();
 
-  // Check for duplicates in parallel
+  // 1. Translate fields
+  const translatedName = await translateMultiLang(name);
+  const translatedNationality = await translateMultiLang(nationality);
+  const translatedAddress = await translateMultiLang(address);
+  const translatedCity = await translateMultiLang(city);
+
+  // 2. Handle duplicate checks in parallel
   const [existingEmail, existingPhone, existingStation] = await Promise.all([
     userModel.findOne({ email }),
     userModel.findOne({ phone }),
     stationModel.findOne({ _id: station }),
   ]);
+
   if (existingEmail)
     return next(new Error("Email already exists", { cause: 401 }));
   if (existingPhone)
@@ -60,7 +69,7 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
 
   const uploadedFiles = req.files || {};
 
-  // Upload profile pic (if exists)
+  // 3. Process profile image upload (if exists)
   const profilePicFile = uploadedFiles?.profilePic?.[0];
   const imageUrl = profilePicFile
     ? await uploadImageCloudinary(
@@ -70,18 +79,18 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
       )
     : null;
 
-  // Process document uploads in parallel
+  // 4. Process documents
   const processedDocuments = Array.isArray(documentsData)
     ? await Promise.all(
         documentsData.map(async (doc, i) => {
           const { title, start, end } = doc;
-
           if (!title || !start || !end) {
             throw new Error(
               "Each document must have title, start date, and end date"
             );
           }
 
+          const translatedTitle = await translateMultiLang(title);
           const files = uploadedFiles[`documentFiles_${i}`] || [];
           const folder = `${process.env.APP_NAME}/Users/${customId}/documents/document_${i}`;
 
@@ -96,7 +105,7 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
           );
 
           return {
-            title,
+            title: translatedTitle,
             start: new Date(start),
             end: new Date(end),
             files: fileUploads,
@@ -105,18 +114,18 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
       )
     : [];
 
-  // Create employee record
+  // 5. Create employee record
   const newEmployee = await userModel.create({
-    name: formattedName,
+    name: translatedName,
     email,
     password: Hash({ plainText: password }),
     phone,
     age,
     dateOfBirth,
     gender,
-    nationality,
-    address,
-    city,
+    nationality: translatedNationality,
+    address: translatedAddress,
+    city: translatedCity,
     imageUrl,
     nationalId,
     swiftCode,
@@ -131,11 +140,16 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
     residenceExpiryDate,
     documents: processedDocuments,
   });
-  existingStation.employees.push(newEmployee._id);
-  await existingStation.save();
+
+  // 6. Update station with the new employee
+  const existingStationWithEmployees = await stationModel.findOne({
+    _id: station,
+  });
+  existingStationWithEmployees.employees.push(newEmployee._id);
+  await existingStationWithEmployees.save();
 
   return res.status(201).json({
-    message: getTranslation("Account created successfully", req.language),
+    message: "Employee created successfully",
     result: newEmployee,
   });
 });
@@ -285,7 +299,6 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
     residenceExpiryDate,
   } = req.body;
 
-  const formattedName = name ? capitalizeWords(name) : undefined;
   const uploadedFiles = req.files || {};
 
   // Check for updated email or phone duplicates
@@ -297,17 +310,35 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
       ? userModel.findOne({ phone })
       : null,
   ]);
+
   if (existingEmail)
     return next(new Error("Email already exists", { cause: 409 }));
   if (existingPhone)
     return next(new Error("Phone number already exists", { cause: 409 }));
 
+  // Translate name and address if provided
+  const translatedName = name
+    ? await translateMultiLang(capitalizeWords(name))
+    : undefined;
+  const translatedAddress = address
+    ? await translateMultiLang(address)
+    : undefined;
+
+  const translatedNationality = nationality
+    ? await translateMultiLang(nationality)
+    : undefined;
+
+  const translatedCity = city ? await translateMultiLang(city) : undefined;
+
   // Update profile pic if provided
   const profilePicFile = uploadedFiles?.profilePic?.[0];
   if (profilePicFile) {
     const profilePicFolder = `${process.env.APP_NAME}/Users/${existingEmployee.customId}/profilePic`;
+
+    // Delete old profile picture if exists
     await deleteFromCloudinary(profilePicFolder);
 
+    // Upload new profile pic
     existingEmployee.imageUrl = await uploadToCloudinary(
       profilePicFile,
       profilePicFolder,
@@ -315,35 +346,36 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Update fields (only if provided)
-  const fieldsToUpdate = {
-    name: formattedName,
-    email,
-    password: password ? Hash({ plainText: password }) : undefined,
-    phone,
-    age,
-    dateOfBirth,
-    gender,
-    nationality,
-    address,
-    city,
-    nationalId,
-    swiftCode,
-    IBAN,
-    permissions,
-    station,
-    salary,
-    timeWork,
-    joiningDate,
-    contractDuration,
-    residenceExpiryDate,
+  // Handle translation for updated fields
+  const updatedFields = {
+    name: translatedName || existingEmployee.name,
+    email: email || existingEmployee.email,
+    phone: phone || existingEmployee.phone,
+    age: age || existingEmployee.age,
+    dateOfBirth: dateOfBirth || existingEmployee.dateOfBirth,
+    gender: gender || existingEmployee.gender,
+    nationality: translatedNationality || existingEmployee.nationality,
+    address: translatedAddress || existingEmployee.address,
+    city: translatedCity || existingEmployee.city,
+    nationalId: nationalId || existingEmployee.nationalId,
+    swiftCode: swiftCode || existingEmployee.swiftCode,
+    IBAN: IBAN || existingEmployee.IBAN,
+    permissions: permissions || existingEmployee.permissions,
+    station: station || existingEmployee.station,
+    salary: salary || existingEmployee.salary,
+    timeWork: timeWork || existingEmployee.timeWork,
+    joiningDate: joiningDate || existingEmployee.joiningDate,
+    contractDuration: contractDuration || existingEmployee.contractDuration,
+    residenceExpiryDate:
+      residenceExpiryDate || existingEmployee.residenceExpiryDate,
   };
 
-  // Apply fields
-  Object.entries(fieldsToUpdate).forEach(([key, value]) => {
-    if (value !== undefined) existingEmployee[key] = value;
+  // Apply updated fields to the existing employee
+  Object.entries(updatedFields).forEach(([key, value]) => {
+    existingEmployee[key] = value;
   });
 
+  // Save updated employee
   await existingEmployee.save();
 
   return res.status(200).json({
@@ -351,6 +383,7 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
     result: existingEmployee,
   });
 });
+
 //====================================================================================================================//
 // Delete employee
 export const deleteEmployee = asyncHandler(async (req, res, next) => {
@@ -487,9 +520,10 @@ export const addUserDocument = asyncHandler(async (req, res, next) => {
         )
       )
   );
+  const translatedTitle = await translateMultiLang(title);
 
   const newDocument = {
-    title,
+    title: translatedTitle,
     start: new Date(start),
     end: new Date(end),
     files: uploadedFiles,
@@ -506,16 +540,34 @@ export const addUserDocument = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //get all employees
 export const getAllEmployees = asyncHandler(async (req, res, next) => {
+  const targetLang = req.language || "en"; // fallback to 'en'
+
   const employees = await userModel.find(
     { role: "employee" },
     "name email imageUrl employeeCode timeWork"
   );
-  return res.status(201).json({
+
+  // Translate employee fields based on targetLang
+  const translatedEmployees = await Promise.all(
+    employees.map(async (emp) => {
+      const translatedName = await translateMultiLang(emp.name);
+      const translatedTimeWork = await translateMultiLang(emp.timeWork);
+
+      return {
+        ...emp.toObject(),
+        name: translatedName[targetLang] || emp.name,
+        timeWork: translatedTimeWork[targetLang] || emp.timeWork,
+      };
+    })
+  );
+
+  return res.status(200).json({
     status: "success",
-    count: employees.length,
-    result: employees,
+    count: translatedEmployees.length,
+    result: translatedEmployees,
   });
 });
+
 //====================================================================================================================//
 //user attendance
 export const userAttendance = asyncHandler(async (req, res, next) => {
@@ -536,67 +588,9 @@ export const userAttendance = asyncHandler(async (req, res, next) => {
 });
 //====================================================================================================================//
 //get job tasks
-// export const getJobTasks = asyncHandler(async (req, res, next) => {
-//   const { userId } = req.params;
-//   const user = await userModel.findById(userId);
-//   if (!user) {
-//     return next(new Error("User not found", { cause: 404 }));
-//   }
-//   const cleaningTasks = await cleaningTaskModel.find(
-//     { user: userId },
-//     "subTask date time location employeeName cleaningImages"
-//   );
-
-//  const inventoryTasks = await inventoryTaskModel.find(
-//   { user: userId },
-//   "subTask date time location employeeName inventoryImages pumps"
-// )
-// .populate({
-//   path: "pumps.pump",
-//   select: "pumpName"
-// })
-// .populate({
-//   path: "pumps.pistols.pistol",
-//   select: "gasolineName"
-// });
-
-// // Now transform the result
-// const transformedTasks = inventoryTasks.map(task => {
-//   const transformedPumps = task.pumps.map(pumpItem => ({
-//     _id: pumpItem._id,
-//     pump: pumpItem.pump?.pumpName || null, // instead of whole pump object, take pumpName
-//     pistols: pumpItem.pistols.map(pistolItem => ({
-//       _id: pistolItem._id,
-//       pistol: pistolItem.pistol?.gasolineName || null, // instead of whole pistol object, take gasolineName
-//       counterNumber: pistolItem.counterNumber
-//     }))
-//   }));
-
-//   return {
-//     _id: task._id,
-//     subTask: task.subTask,
-//     date: task.date,
-//     time: task.time,
-//     location: task.location,
-//     employeeName: task.employeeName,
-//     inventoryImages: task.inventoryImages,
-//     pumps: transformedPumps
-//   };
-// });
-
-// // Finally, send `transformedTasks` instead of `inventoryTasks`
-// res.json(transformedTasks);
-
-//   return res.status(200).json({
-//     status: "success",
-//     data: {
-//       cleaningTasks,
-//       inventoryTasks,
-//     },
-//   });
-// });
 export const getJobTasks = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
+  const targetLang = req.language || "en"; // Fallback to English
 
   // 1. Find user
   const user = await userModel.findById(userId);
@@ -604,52 +598,90 @@ export const getJobTasks = asyncHandler(async (req, res, next) => {
     return next(new Error("User not found", { cause: 404 }));
   }
 
-  // 2. Fetch cleaning tasks
-  const cleaningTasks = await cleaningTaskModel.find(
+  // 2. Fetch cleaning tasks (employeeName translated)
+  const cleaningTasksRaw = await cleaningTaskModel.find(
     { user: userId },
     "subTask date time location employeeName cleaningImages"
   );
 
-  // 3. Fetch inventory tasks with populated pumps and pistols
-  const inventoryTasksRaw = await inventoryTaskModel.find(
-    { user: userId },
-    "subTask date time location employeeName inventoryImages pumps"
-  )
+  const cleaningTasks = await Promise.all(
+    cleaningTasksRaw.map(async (task) => {
+      const { translatedText } = await translateAutoDetect(
+        task.employeeName,
+        targetLang
+      );
+
+      return {
+        _id: task._id,
+        subTask: task.subTask, // no translation
+        date: task.date,
+        time: task.time,
+        location: task.location, // no translation
+        employeeName: translatedText,
+        cleaningImages: task.cleaningImages,
+      };
+    })
+  );
+
+  // 3. Fetch inventory tasks (employeeName translated + populated pumps and pistols)
+  const inventoryTasksRaw = await inventoryTaskModel
+    .find(
+      { user: userId },
+      "subTask date time location employeeName inventoryImages pumps"
+    )
     .populate({
       path: "pumps.pump",
-      select: "pumpName"
+      select: "pumpName",
     })
     .populate({
       path: "pumps.pistols.pistol",
-      select: "gasolineName"
+      select: "gasolineName",
     });
 
-  // 4. Transform inventory tasks
-  const inventoryTasks = inventoryTasksRaw.map(task => ({
-    _id: task._id,
-    subTask: task.subTask,
-    date: task.date,
-    time: task.time,
-    location: task.location,
-    employeeName: task.employeeName,
-    inventoryImages: task.inventoryImages,
-    pumps: task.pumps.map(pumpItem => ({
-      _id: pumpItem._id,
-      pump: pumpItem.pump?.pumpName || null,
-      pistols: pumpItem.pistols.map(pistolItem => ({
-        _id: pistolItem._id,
-        pistol: pistolItem.pistol?.gasolineName || null,
-        counterNumber: pistolItem.counterNumber
-      }))
-    }))
-  }));
+  const inventoryTasks = await Promise.all(
+    inventoryTasksRaw.map(async (task) => {
+      const { translatedText } = await translateAutoDetect(
+        task.employeeName,
+        targetLang
+      );
 
-  // 5. Send final response
+      return {
+        _id: task._id,
+        subTask: task.subTask, // no translation
+        date: task.date,
+        time: task.time,
+        location: task.location, // no translation
+        employeeName: translatedText,
+        inventoryImages: task.inventoryImages,
+        pumps: task.pumps.map((pumpItem) => ({
+          _id: pumpItem._id,
+          pump:
+            typeof pumpItem.pump?.pumpName === "object"
+              ? pumpItem.pump.pumpName[targetLang] ||
+                pumpItem.pump.pumpName.en ||
+                Object.values(pumpItem.pump.pumpName)[0]
+              : pumpItem.pump?.pumpName || null,
+          pistols: pumpItem.pistols.map((pistolItem) => ({
+            _id: pistolItem._id,
+            pistol:
+              typeof pistolItem.pistol?.gasolineName === "object"
+                ? pistolItem.pistol.gasolineName[targetLang] ||
+                  pistolItem.pistol.gasolineName.en ||
+                  Object.values(pistolItem.pistol.gasolineName)[0]
+                : pistolItem.pistol?.gasolineName || null,
+            counterNumber: pistolItem.counterNumber,
+          })),
+        })),
+      };
+    })
+  );
+
+  // 4. Send final response
   return res.status(200).json({
     status: "success",
     data: {
       cleaningTasks,
-      inventoryTasks
-    }
+      inventoryTasks,
+    },
   });
 });

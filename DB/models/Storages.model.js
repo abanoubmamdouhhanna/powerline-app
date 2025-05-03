@@ -8,11 +8,14 @@ const storagesSchema = new Schema(
       required: true,
     },
     storageName: {
-      type: String,
-      required: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
     description: {
-      type: String,
+      ar: { type: String },
+      en: { type: String },
+      bn: { type: String },
     },
     remainingNo: {
       type: Number,

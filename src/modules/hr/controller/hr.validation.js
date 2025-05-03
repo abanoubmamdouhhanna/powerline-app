@@ -208,6 +208,8 @@ export const logInSchema = (lang = "en") =>
 export const updateEmployeeSchema = (lang = "en") =>
   joi
     .object({
+      employeeId:generalFields(lang).id,
+
       name: generalFields(lang).name.optional().trim(),
 
       email: generalFields(lang).email.optional(),

@@ -12,20 +12,53 @@ import {
   uploadImageCloudinary,
   uploadToCloudinary,
 } from "../../../utils/cloudinaryHelpers.js";
+import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
+import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
 
 // add gasoline type
 export const addGasoline = asyncHandler(async (req, res, next) => {
   const { gasolineName } = req.body;
-  const gasoline = await gasolineTypeModel.create({ gasolineName });
+
+  if (!gasolineName) {
+    return next(new Error("Gasoline name is required", { cause: 400 }));
+  }
+
+  // Detect language and translate to others
+  const targetLangs = ["en", "ar", "bn"];
+  const translations = {};
+
+  const { translatedText, detectedLang } = await translateAutoDetect(
+    gasolineName,
+    "en"
+  ); // Detect
+
+  translations[detectedLang] = gasolineName; // Original entry
+
+  // Translate to the other languages
+  const remainingLangs = targetLangs.filter((lang) => lang !== detectedLang);
+
+  await Promise.all(
+    remainingLangs.map(async (lang) => {
+      const result = await translateAutoDetect(gasolineName, lang);
+      translations[lang] = result.translatedText;
+    })
+  );
+
+  const gasoline = await gasolineTypeModel.create({
+    gasolineName: translations,
+  });
+
   return res.status(201).json({
     message: getTranslation("Gasoline type added successfully", req.language),
     result: gasoline,
   });
 });
+
 //====================================================================================================================//
 //add pump
 export const addPump = asyncHandler(async (req, res, next) => {
   const { station, pumpName, pistolTypes } = req.body;
+
   if (
     !station ||
     !pumpName ||
@@ -35,10 +68,11 @@ export const addPump = asyncHandler(async (req, res, next) => {
     return next(
       new Error(
         "All fields are required: station, pumpName, and pistolTypes.",
-        { cause: 404 }
+        { cause: 400 }
       )
     );
   }
+
   const isStationValid = await stationModel.exists({ _id: station });
   if (!isStationValid)
     return next(new Error("Station not found.", { cause: 404 }));
@@ -51,30 +85,62 @@ export const addPump = asyncHandler(async (req, res, next) => {
       new Error("One or more pistol types are invalid.", { cause: 400 })
     );
   }
-  const pump = await pumpModel.create({ station, pumpName, pistolTypes });
+
+  // Auto-detect original language and translate pumpName
+  const nameEN = await translateAutoDetect(pumpName, "en");
+  const nameAR = await translateAutoDetect(pumpName, "ar");
+  const nameBN = await translateAutoDetect(pumpName, "bn");
+
+  const pump = await pumpModel.create({
+    station,
+    pistolTypes,
+    pumpName: {
+      en: nameEN.translatedText,
+      ar: nameAR.translatedText,
+      bn: nameBN.translatedText,
+    },
+  });
+
   return res.status(201).json({
     message: getTranslation("Pump created successfully.", req.language),
     result: pump,
   });
 });
+
 //====================================================================================================================//
 //get pumps for station
 export const getPumps = asyncHandler(async (req, res, next) => {
   const { stationId } = req.params;
+  const targetLang = req.language;
+
   const station = await stationModel.findOne({ _id: stationId });
   if (!station) return next(new Error("Station not found", { cause: 404 }));
+
   const allPumps = await pumpModel.find({ station: stationId });
+
+  const localizedPumps = allPumps.map((pump) => ({
+    _id: pump._id,
+    station: pump.station,
+    pistolTypes: pump.pistolTypes,
+    pumpName: pump.pumpName?.[targetLang] || pump.pumpName?.en || "N/A", // fallback to English
+    createdAt: pump.createdAt,
+    updatedAt: pump.updatedAt,
+  }));
+
   return res.status(200).json({
     status: "success",
-    result: allPumps,
+    result: localizedPumps,
   });
 });
 
 //====================================================================================================================//
 //get gasoline types for pump
+
 export const getPumpTypes = asyncHandler(async (req, res, next) => {
   const { pumpId, stationId } = req.body;
+  const targetLang = req.language || "en"; // Default to "en" if no language is specified
 
+  // Validate if pump exists for the given station
   const isPumpValid = await pumpModel.exists({
     _id: pumpId,
     station: stationId,
@@ -88,11 +154,27 @@ export const getPumpTypes = asyncHandler(async (req, res, next) => {
       select: "gasolineName",
       model: "GasolineType",
     });
+
+  if (!pump) return next(new Error("Pump not found.", { cause: 404 }));
+
+  const translatedPistolTypes = pump.pistolTypes.map((pistolType) => {
+    const gasolineName =
+      pistolType.gasolineName[targetLang] || pistolType.gasolineName["en"];
+    return {
+      _id: pistolType._id,
+      gasolineName, // Use the translated name
+    };
+  });
+
   return res.status(200).json({
     status: "success",
-    result: pump,
+    result: {
+      ...pump.toObject(),
+      pistolTypes: translatedPistolTypes,
+    },
   });
 });
+
 //====================================================================================================================//
 // add station
 export const addStation = asyncHandler(async (req, res, next) => {
@@ -109,8 +191,11 @@ export const addStation = asyncHandler(async (req, res, next) => {
     stores: storesData,
   } = req.body;
 
-  // 1. Format and ID
-  const formattedStationName = capitalizeWords(stationName);
+  // 1. Translate station name and address
+  const translatedStationName = await translateMultiLang(
+    capitalizeWords(stationName)
+  );
+  const translatedStationAddress = await translateMultiLang(stationAddress);
   const customId = nanoid();
 
   // 2. Uploaded files map
@@ -127,9 +212,10 @@ export const addStation = asyncHandler(async (req, res, next) => {
             );
           }
 
+          const translatedTitle = await translateMultiLang(title);
           const files = uploadedFiles[`documentFiles_${i}`] || [];
-          const folder = `${process.env.APP_NAME}/Stations/${customId}/documents/document_${i}`;
 
+          const folder = `${process.env.APP_NAME}/Stations/${customId}/documents/document_${i}`;
           const fileUploads = await Promise.all(
             files.map((file) =>
               uploadToCloudinary(
@@ -141,10 +227,10 @@ export const addStation = asyncHandler(async (req, res, next) => {
           );
 
           return {
-            title,
+            title: translatedTitle,
             start: new Date(start),
             end: new Date(end),
-            files: fileUploads, // [{ secure_url, public_id, resource_type }, …]
+            files: fileUploads,
           };
         })
       )
@@ -154,11 +240,7 @@ export const addStation = asyncHandler(async (req, res, next) => {
   const processedStores = Array.isArray(storesData)
     ? await Promise.all(
         storesData.map(async (store, i) => {
-          const {
-            storeName,
-            description,
-            residenceExpiryDate, // ISO string
-          } = store;
+          const { storeName, description, residenceExpiryDate } = store;
 
           if (!storeName || !description || !residenceExpiryDate) {
             throw new Error(
@@ -166,9 +248,14 @@ export const addStation = asyncHandler(async (req, res, next) => {
             );
           }
 
+          const translatedStoreName = await translateMultiLang(
+            capitalizeWords(storeName)
+          );
+          const translatedDescription = await translateMultiLang(description);
+
           const baseFolder = `${process.env.APP_NAME}/Stations/${customId}/stores/store_${i}`;
 
-          // 4a. leaseDoc (required)
+          // leaseDoc
           const leaseFiles = uploadedFiles[`leaseDoc_${i}`] || [];
           if (leaseFiles.length !== 1) {
             return next(
@@ -177,14 +264,14 @@ export const addStation = asyncHandler(async (req, res, next) => {
               })
             );
           }
+
           const leaseDoc = await uploadToCloudinary(
             leaseFiles[0],
             `${baseFolder}/leaseDoc`,
             `${customId}_storeLease_${i}_${leaseFiles[0].originalname}`
           );
-          // leaseDoc → { secure_url, public_id, resource_type }
 
-          // 4b. shopImage (optional)
+          // shopImage (optional)
           const shopImageFile = uploadedFiles[`shopImage_${i}`]?.[0] || null;
           const shopImage = shopImageFile
             ? await uploadImageCloudinary(
@@ -195,10 +282,10 @@ export const addStation = asyncHandler(async (req, res, next) => {
             : null;
 
           return {
-            storeName,
-            description,
+            storeName: translatedStoreName,
+            description: translatedDescription,
             leaseDoc,
-            shopImage, // string or null
+            shopImage,
             residenceExpiryDate: new Date(residenceExpiryDate),
           };
         })
@@ -208,8 +295,8 @@ export const addStation = asyncHandler(async (req, res, next) => {
   // 5. Create and respond
   const newStation = await stationModel.create({
     customId,
-    stationName: formattedStationName,
-    stationAddress,
+    stationName: translatedStationName,
+    stationAddress: translatedStationAddress,
     noOfPumps,
     noOfPistol,
     supplier,
@@ -229,37 +316,64 @@ export const addStation = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //get all stations
 export const getAllStations = asyncHandler(async (req, res, next) => {
+  const targetLang = req.language || "en"; // fallback to 'en'
+
   const stations = await stationModel
     .find({}, "stationName employees")
     .populate("stationEmployees", "name imageUrl permissions");
 
-  const enrichedStations = stations.map((station) => ({
-    _id: station._id,
-    stationName: station.stationName,
-    stationEmployees: station.stationEmployees,
-    employeeCount: station.stationEmployees.length,
-  }));
+  const enrichedStations = stations.map((station) => {
+    const nameField = station.stationName;
+    const translatedName =
+      typeof nameField === "object"
+        ? nameField[targetLang] || nameField.en || Object.values(nameField)[0]
+        : nameField;
+
+    return {
+      _id: station._id,
+      stationName: translatedName,
+      stationEmployees: station.stationEmployees,
+      employeeCount: station.stationEmployees.length,
+    };
+  });
 
   return res.status(200).json({
     message: "Success",
     result: enrichedStations,
   });
 });
+
 //====================================================================================================================//
 //get sp station
 export const getSpStation = asyncHandler(async (req, res, next) => {
   const { stationId } = req.params;
+  const targetLang = req.language || "en";
+
   const station = await stationModel.findOne({ _id: stationId });
   if (!station) return next(new Error("Station not found", { cause: 404 }));
+
+  const getField = (fieldObj) => {
+    if (typeof fieldObj === "object") {
+      return fieldObj[targetLang] || fieldObj.en || Object.values(fieldObj)[0];
+    }
+    return fieldObj;
+  };
+
   return res.status(200).json({
     message: "Success",
-    result: station,
+    result: {
+      ...station.toObject(),
+      stationName: getField(station.stationName),
+      stationAddress: getField(station.stationAddress),
+    },
   });
 });
+
 //====================================================================================================================//
 //update station
 export const updateStation = asyncHandler(async (req, res, next) => {
-  const { stationId } = req.params; // assuming you're passing station ID via URL params
+  const { stationId } = req.params;
+
   const {
     stationName,
     stationAddress,
@@ -271,23 +385,30 @@ export const updateStation = asyncHandler(async (req, res, next) => {
     noOfDieselPistol,
   } = req.body;
 
-  const formattedStationName = stationName
-    ? capitalizeWords(stationName)
-    : undefined;
+  const updatedFields = {};
 
-  const updatedFields = {
-    ...(formattedStationName && { stationName: formattedStationName }),
-    ...(stationAddress && { stationAddress }),
-    ...(noOfPumps !== undefined && { noOfPumps }),
-    ...(noOfPistol !== undefined && { noOfPistol }),
-    ...(supplier && { supplier }),
-    ...(noOfGreenPistol !== undefined && { noOfGreenPistol }),
-    ...(noOfRedPistol !== undefined && { noOfRedPistol }),
-    ...(noOfDieselPistol !== undefined && { noOfDieselPistol }),
-  };
+  // Translate stationName if provided
+  if (stationName) {
+    const formattedStationName = capitalizeWords(stationName);
+    updatedFields.stationName = await translateMultiLang(formattedStationName);
+  }
+
+  // Translate stationAddress if provided
+  if (stationAddress) {
+    updatedFields.stationAddress = await translateMultiLang(stationAddress);
+  }
+
+  if (noOfPumps !== undefined) updatedFields.noOfPumps = noOfPumps;
+  if (noOfPistol !== undefined) updatedFields.noOfPistol = noOfPistol;
+  if (supplier) updatedFields.supplier = supplier;
+  if (noOfGreenPistol !== undefined)
+    updatedFields.noOfGreenPistol = noOfGreenPistol;
+  if (noOfRedPistol !== undefined) updatedFields.noOfRedPistol = noOfRedPistol;
+  if (noOfDieselPistol !== undefined)
+    updatedFields.noOfDieselPistol = noOfDieselPistol;
 
   const updatedStation = await stationModel.findByIdAndUpdate(
-    { _id: stationId },
+    stationId,
     { $set: updatedFields },
     { new: true, runValidators: true }
   );
@@ -301,6 +422,7 @@ export const updateStation = asyncHandler(async (req, res, next) => {
     result: updatedStation,
   });
 });
+
 //====================================================================================================================//
 //delete station
 export const deleteStation = asyncHandler(async (req, res, next) => {
@@ -459,8 +581,10 @@ export const addStationDocument = asyncHandler(async (req, res, next) => {
         )
       )
   );
+  const translatedTitle = await translateMultiLang(title);
+
   const newDocument = {
-    title,
+    title: translatedTitle,
     start: new Date(start),
     end: new Date(end),
     files: uploadedFiles,
@@ -575,7 +699,7 @@ export const addStationStore = asyncHandler(async (req, res, next) => {
   }
 
   // Step 2: Find the station
-  const station = await stationModel.findOne({ _id: stationId });
+  const station = await stationModel.findById(stationId);
   if (!station) {
     return next(new Error("Station not found", { cause: 404 }));
   }
@@ -584,7 +708,7 @@ export const addStationStore = asyncHandler(async (req, res, next) => {
   const storeIndex = station.stores.length;
   const folder = `${process.env.APP_NAME}/Stations/${station.customId}/stores/store_${storeIndex}`;
 
-  // Step 4: Upload lease documents (handling multiple files)
+  // Step 4: Upload lease documents
   const leaseFiles = Object.values(req.files.leaseDoc || []);
   if (leaseFiles.length === 0) {
     return next(new Error("No lease documents uploaded", { cause: 400 }));
@@ -609,7 +733,7 @@ export const addStationStore = asyncHandler(async (req, res, next) => {
   );
 
   // Step 5: Upload shop image (optional)
-  const shopImageFile = req.files.shopImage ? req.files.shopImage[0] : null;
+  const shopImageFile = req.files.shopImage?.[0] ?? null;
   const shopImage = shopImageFile
     ? await uploadImageCloudinary(
         shopImageFile,
@@ -618,22 +742,26 @@ export const addStationStore = asyncHandler(async (req, res, next) => {
       )
     : null;
 
-  // Step 6: Create new store object
+  // Step 6: Translate fields
+  const translatedStoreName = await translateMultiLang(storeName);
+  const translatedDescription = await translateMultiLang(description);
+
+  // Step 7: Create new store object
   const newStore = {
-    storeName,
-    description,
+    storeName: translatedStoreName,
+    description: translatedDescription,
     residenceExpiryDate: new Date(residenceExpiryDate),
     leaseDoc: uploadedLeaseDocs[0],
     shopImage,
   };
 
-  // Step 7: Add store to station and save
+  // Step 8: Add store to station and save
   station.stores.push(newStore);
   await station.save();
 
-  // Step 8: Return success response
+  // Step 9: Return success response
   return res.status(201).json({
     message: "Store added successfully",
-    store: station.stores[station.stores.length - 1],
+    store: station.stores.at(-1),
   });
 });

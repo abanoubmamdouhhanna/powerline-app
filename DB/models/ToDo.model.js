@@ -3,9 +3,9 @@ import mongoose, { Schema, Types, model } from "mongoose";
 // 🔹 Document Sub-schema
 const documentSchema = new Schema({
   title: {
-    type: String,
-    required: true,
-    trim: true,
+    ar: { type: String, required: true },
+    en: { type: String, required: true },
+    bn: { type: String, required: true },
   },
   files: [
     {
@@ -23,13 +23,13 @@ const documentSchema = new Schema({
         enum: ["image", "raw"], // optional but safe
       },
     },
-  ]
+  ],
 });
 
 //tasks
 const toDoSchema = new Schema(
   {
-    customId:String,
+    customId: String,
     user: {
       type: Types.ObjectId,
       ref: "User",
@@ -40,8 +40,9 @@ const toDoSchema = new Schema(
       unique: true,
     },
     taskName: {
-      type: String,
-      required: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
     startDate: {
       type: Date,
@@ -57,10 +58,14 @@ const toDoSchema = new Schema(
       default: "Not Started",
     },
     taskDetails: {
-      type: String,
+      ar: { type: String },
+      en: { type: String },
+      bn: { type: String },
     },
     comment: {
-      type: String,
+      ar: { type: String },
+      en: { type: String },
+      bn: { type: String },
     },
     // 🔹 Documents
     documents: [documentSchema],

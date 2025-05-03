@@ -3,9 +3,9 @@ import mongoose, { model, Schema, Types } from "mongoose";
 // 🔹 Document Sub-schema
 const documentSchema = new Schema({
   title: {
-    type: String,
-    required: true,
-    trim: true,
+    ar: { type: String, required: true },
+    en: { type: String, required: true },
+    bn: { type: String, required: true },
   },
   files: [
     {
@@ -39,11 +39,9 @@ const userSchema = new Schema(
     // 🔹 Personal Info
     customId: String,
     name: {
-      type: String,
-      required: true,
-      minlength: 3,
-      maxlength: 20,
-      trim: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
     email: {
       type: String,
@@ -75,19 +73,19 @@ const userSchema = new Schema(
       default: "male",
     },
     nationality: {
-      type: String,
-      required: true,
-      trim: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
     address: {
-      type: String,
-      required: true,
-      trim: true,
+      ar: { type: String, required: true },
+    en: { type: String, required: true },
+    bn: { type: String, required: true },
     },
     city: {
-      type: String,
-      required: true,
-      trim: true,
+      ar: { type: String, required: true },
+    en: { type: String, required: true },
+    bn: { type: String, required: true },
     },
     imageUrl: {
       type: String,

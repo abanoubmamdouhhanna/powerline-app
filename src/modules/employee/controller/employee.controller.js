@@ -63,15 +63,38 @@ export const checkOut = asyncHandler(async (req, res, next) => {
     .json({ message: "Checked out successfully.", attendance });
 });
 //====================================================================================================================//
+//profile
 export const profile = asyncHandler(async (req, res, next) => {
   const employeeId = req.user._id;
+  const targetLang = req.language || "en"; 
+
   const empProfile = await userModel
     .findById(employeeId)
     .select(
       "name email phone age gender nationality address imageUrl workFor employeeCode"
     );
+
   if (!empProfile) {
     return next(new Error("User not found", { cause: 404 }));
   }
-  return res.status(200).json({ message: "success", result: empProfile });
+
+  const translatedProfile = {
+    ...empProfile.toObject(),
+    name:
+      empProfile.name[targetLang] ||
+      empProfile.name.en ||
+      Object.values(empProfile.name)[0],
+    nationality:
+      empProfile.nationality[targetLang] ||
+      empProfile.nationality.en ||
+      Object.values(empProfile.nationality)[0],
+    address:
+      empProfile.address[targetLang] ||
+      empProfile.address.en ||
+      Object.values(empProfile.address)[0],
+  };
+
+  return res
+    .status(200)
+    .json({ message: "success", result: translatedProfile });
 });

@@ -8,9 +8,10 @@ const pumpSchema = new Schema(
       required: true,
     },
     pumpName: {
-      type: String,
-      required: true,
-    },
+      en: { type: String, required: true },
+      ar: { type: String },
+      bn: { type: String },
+    },   
     pistolTypes: [
       {
         type: Types.ObjectId,

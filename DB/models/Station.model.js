@@ -3,9 +3,9 @@ import mongoose, { model, Schema, Types } from "mongoose";
 // 🔹 Document Sub-schema
 const documentSchema = new Schema({
   title: {
-    type: String,
-    required: true,
-    trim: true,
+    ar: { type: String, required: true },
+    en: { type: String, required: true },
+    bn: { type: String, required: true },
   },
   files: [
     {
@@ -37,18 +37,18 @@ const documentSchema = new Schema({
 const shopSchema = new Schema(
   {
     storeName: {
-      type: String,
-      required: true,
-      trim: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
     shopImage: {
       type: String,
       trim: true,
     },
     description: {
-      type: String,
-      required: true,
-      trim: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
     leaseDoc: {
       secure_url: {
@@ -84,15 +84,16 @@ const stationSchema = new Schema(
       },
     ],
     stationName: {
-      type: String,
-      required: true,
-      trim: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
     stationAddress: {
-      type: String,
-      required: true,
-      trim: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
+    
     noOfPumps: {
       type: Number,
       required: true,

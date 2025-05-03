@@ -3,7 +3,7 @@ import mongoose, { model, Schema, Types } from "mongoose";
 const gasolineSchema = new Schema(
   {
     gasolineName: {
-      type: String,
+      type: Schema.Types.Mixed, 
       required: true,
     },
   },

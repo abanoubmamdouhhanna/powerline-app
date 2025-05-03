@@ -2,14 +2,17 @@ import mongoose, { Schema, Types, model } from "mongoose";
 
 const supplierSchema = new Schema(
   {
-    station: [{
-      type: Types.ObjectId,
-      ref: "Station",
-      required: true,
-    }],
+    station: [
+      {
+        type: Types.ObjectId,
+        ref: "Station",
+        required: true,
+      },
+    ],
     supplierName: {
-      type: String,
-      required: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
     phone: {
       type: String,
@@ -23,8 +26,9 @@ const supplierSchema = new Schema(
       required: true,
     },
     supplierAddress: {
-      type: String,
-      required: true,
+      ar: { type: String, required: true },
+      en: { type: String, required: true },
+      bn: { type: String, required: true },
     },
     swiftCode: {
       type: String,

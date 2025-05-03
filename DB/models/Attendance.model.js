@@ -26,9 +26,9 @@ const attendanceSchema = new Schema(
       type: String,
       default: "00:00 Hrs",
     },
-    fullDay:{
-      type:Boolean,
-      default:false
+    fullDay: {
+      type: Boolean,
+      default: false,
     },
     status: {
       type: String,
@@ -159,7 +159,9 @@ attendanceSchema.pre("save", async function (next) {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
 
-    Attendance.workingHours = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} Hrs`;
+    Attendance.workingHours = `${String(hours).padStart(2, "0")}:${String(
+      minutes
+    ).padStart(2, "0")} Hrs`;
 
     //Full Day logic
     if (isStation) {
