@@ -564,7 +564,7 @@ export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
 
   // Step 2: Apply ApiFeatures (filter, paginate, etc.)
   const apiFeatures = new ApiFeatures(mongooseQuery, req.query).filter();
-  const paginationResult = await apiFeatures.paginate(); 
+  const paginationResult = await apiFeatures.paginate();
 
   // Step 3: Add populate and lean after features
   const supplierRequests = await apiFeatures.mongooseQuery
