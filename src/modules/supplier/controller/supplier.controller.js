@@ -284,7 +284,7 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
   const supplierRequests = await suppliesRequestModel
     .find(
       {},
-      "supplier station fuelAmount fuelType status carImage receiptImage safetyImage specsImage"
+      "supplier station fuelAmount fuelType status carImage receiptImage safetyImage specsImage isCarCompleted matchingSpecs matchingSafety"
     )
     .populate("stationDetails", "stationName")
     .populate(
@@ -293,33 +293,49 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
     )
     .lean({ virtuals: true });
 
-  // Extract unique fuelTypes and statuses for batch translation
+  // Extract unique values for translation
   const uniqueFuelTypes = [
     ...new Set(supplierRequests.map((req) => req.fuelType)),
   ];
   const uniqueStatuses = [
     ...new Set(supplierRequests.map((req) => req.status)),
   ];
+  const uniqueSpecsMatches = [
+    ...new Set(supplierRequests.map((req) => req.matchingSpecs)),
+  ];
+  const uniqueSafetyMatches = [
+    ...new Set(supplierRequests.map((req) => req.matchingSafety)),
+  ];
+  const uniqueCarCompleted = [
+    ...new Set(supplierRequests.map((req) => req.isCarCompleted)),
+  ];
 
-  // Translate fuelTypes and statuses
   const translatedFuelTypes = {};
   const translatedStatuses = {};
+  const translatedSpecsMatches = {};
+  const translatedSafetyMatches = {};
+  const translatedCarCompleted = {};
 
-  await Promise.all(
-    uniqueFuelTypes.map(async (type) => {
-      const { translatedText } = await translateAutoDetect(type, targetLang);
-      translatedFuelTypes[type] = translatedText;
-    })
-  );
+  // Helper function to batch translate a set of values
+  const translateSet = async (values, target, outputMap) => {
+    await Promise.all(
+      values.map(async (val) => {
+        const { translatedText } = await translateAutoDetect(
+          val?.toString(),
+          target
+        );
+        outputMap[val] = translatedText;
+      })
+    );
+  };
 
-  await Promise.all(
-    uniqueStatuses.map(async (status) => {
-      const { translatedText } = await translateAutoDetect(status, targetLang);
-      translatedStatuses[status] = translatedText;
-    })
-  );
+  await translateSet(uniqueFuelTypes, targetLang, translatedFuelTypes);
+  await translateSet(uniqueStatuses, targetLang, translatedStatuses);
+  await translateSet(uniqueSpecsMatches, targetLang, translatedSpecsMatches);
+  await translateSet(uniqueSafetyMatches, targetLang, translatedSafetyMatches);
+  await translateSet(uniqueCarCompleted, targetLang, translatedCarCompleted);
 
-  // Format final result with translations
+  // Format final result
   const formattedRequests = supplierRequests.map((req) => {
     const stationName =
       req.stationDetails?.[0]?.stationName?.[targetLang] ||
@@ -352,6 +368,12 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
       receiptImage: req.receiptImage,
       safetyImage: req.safetyImage,
       specsImage: req.specsImage,
+      matchingSpecs:
+        translatedSpecsMatches[req.matchingSpecs] || req.matchingSpecs,
+      matchingSafety:
+        translatedSafetyMatches[req.matchingSafety] || req.matchingSafety,
+      isCarCompleted:
+        translatedCarCompleted[req.isCarCompleted] || req.isCarCompleted,
     };
   });
 
@@ -360,6 +382,7 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
     result: formattedRequests,
   });
 });
+
 //====================================================================================================================//
 //send to supplier
 export const sendToSupplier = asyncHandler(async (req, res, next) => {
@@ -690,5 +713,21 @@ export const reviewRequest = asyncHandler(async (req, res, next) => {
     status: "success",
     message: "Order reviewed successfully",
     result: supplierReq,
+  });
+});
+//====================================================================================================================//
+//complete request
+export const completeReq = asyncHandler(async (req, res, next) => {
+  const { reqId } = req.params;
+  const completeReq = await suppliesRequestModel.findByIdAndUpdate(
+    reqId,
+    { status: "Completed" },
+    { new: true }
+  );
+
+  return res.status(200).json({
+    status: "success",
+    message: "Supplier request completed successfully",
+    result: completeReq,
   });
 });

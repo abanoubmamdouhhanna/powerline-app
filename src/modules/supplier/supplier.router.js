@@ -57,10 +57,7 @@ router.post(
 );
 
 //get all supplier requests
-router.get(
-  "/getALLSupplierReq",
-  supplierController.getALLSupplierReq
-);
+router.get("/getALLSupplierReq", supplierController.getALLSupplierReq);
 
 //send to supplier
 router.post(
@@ -96,5 +93,13 @@ router.post(
     { name: "receiptImage", maxCount: 1 },
   ]),
   supplierController.reviewRequest
+);
+
+//complete request
+router.patch(
+  "/completeReq/:reqId",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  supplierController.completeReq
 );
 export default router;

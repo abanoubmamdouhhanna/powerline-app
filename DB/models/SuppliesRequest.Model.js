@@ -2,7 +2,7 @@ import mongoose, { Schema, Types, model } from "mongoose";
 
 const suppliesRequestSchema = new Schema(
   {
-    customId:String,
+    customId: String,
     // Work Station Information
     employeeName: {
       type: String,
@@ -61,38 +61,30 @@ const suppliesRequestSchema = new Schema(
     // Request Status and Approval
     status: {
       type: String,
-      enum: ["Pending", "Waiting", "Review underway", "Rejected", "Completed"],
+      enum: ["Pending", "Waiting", "Review underway","Completed"],
       default: "Pending",
     },
 
-    // isApproved: {
-    //   type: Boolean,
-    //   default: false,
-    // },
-    // approvedBy: {
-    //   type: Types.ObjectId,
-    //   ref: "User",
-    // },
-    // approvalDate: Date,
-    // notes: String,
-
     //feedback
     isCarCompleted: {
-      type: Boolean,
-      default: false,
+      type: String,
+      enum: ["Yes", "No"],
+      default: "Yes",
     },
-    carImage:String,
+    carImage: String,
     matchingSpecs: {
-      type: Boolean,
-      default: false,
+      type: String,
+      enum: ["Yes", "No"],
+      default: "Yes",
     },
-    specsImage:String,
+    specsImage: String,
     matchingSafety: {
-      type: Boolean,
-      default: false,
+      type: String,
+      enum: ["Yes", "No"],
+      default: "Yes",
     },
-    safetyImage:String,
-    receiptImage:String,
+    safetyImage: String,
+    receiptImage: String,
     // Metadata
     isDeleted: {
       type: Boolean,
