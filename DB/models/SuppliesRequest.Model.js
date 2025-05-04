@@ -2,7 +2,12 @@ import mongoose, { Schema, Types, model } from "mongoose";
 
 const suppliesRequestSchema = new Schema(
   {
+    customId:String,
     // Work Station Information
+    employeeName: {
+      type: String,
+      required: true,
+    },
     station: {
       type: Types.ObjectId,
       ref: "Station",
@@ -13,12 +18,16 @@ const suppliesRequestSchema = new Schema(
       required: true,
       min: 0,
     },
+    orderDate: {
+      type: Date,
+      default: new Date().toISOString().split("T")[0],
+    },
 
     // Fuel Type Information
     fuelType: {
       type: String,
       required: true,
-      enum: ["Green Gasoline", "Diesel", "Red Gasoline"],
+      enum: ["Green", "Diesel", "Red"],
       trim: true,
     },
 
@@ -32,20 +41,16 @@ const suppliesRequestSchema = new Schema(
     // Payment Details
     paymentMethod: {
       type: String,
-      required: true,
       enum: ["Bank Transfer", "Cash", "Credit Card", "Other"],
-      default: "Bank Transfer",
     },
     paymentReciptImage: String,
 
     pricePerLiter: {
       type: Number,
-      required: true,
       min: 0,
     },
     totalLiters: {
       type: Number,
-      required: true,
       min: 0,
     },
     totalCost: {
@@ -60,31 +65,34 @@ const suppliesRequestSchema = new Schema(
       default: "Pending",
     },
 
-    isApproved: {
-      type: Boolean,
-      default: false,
-    },
-    approvedBy: {
-      type: Types.ObjectId,
-      ref: "User",
-    },
-    approvalDate: Date,
-    notes: String,
+    // isApproved: {
+    //   type: Boolean,
+    //   default: false,
+    // },
+    // approvedBy: {
+    //   type: Types.ObjectId,
+    //   ref: "User",
+    // },
+    // approvalDate: Date,
+    // notes: String,
 
     //feedback
     isCarCompleted: {
       type: Boolean,
       default: false,
     },
+    carImage:String,
     matchingSpecs: {
       type: Boolean,
       default: false,
     },
+    specsImage:String,
     matchingSafety: {
       type: Boolean,
       default: false,
     },
-    feedBackImages: [String],
+    safetyImage:String,
+    receiptImage:String,
     // Metadata
     isDeleted: {
       type: Boolean,
@@ -106,22 +114,7 @@ suppliesRequestSchema.pre(/^find/, function (next) {
   next();
 });
 
-// Middleware: Calculate total cost before saving
-suppliesRequestSchema.pre("save", function (next) {
-  if (this.payment.price && this.payment.amountOfFuelByLitre) {
-    this.payment.totalCost =
-      this.payment.price * this.payment.amountOfFuelByLitre;
-  }
-  next();
-});
-
 // Virtual fields for related data
-suppliesRequestSchema.virtual("employeeDetails", {
-  ref: "User",
-  localField: "employee",
-  foreignField: "_id",
-});
-
 suppliesRequestSchema.virtual("stationDetails", {
   ref: "Station",
   localField: "station",

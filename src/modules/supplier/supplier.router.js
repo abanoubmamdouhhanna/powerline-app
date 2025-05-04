@@ -48,4 +48,55 @@ router.delete(
   supplierController.deleteSupplier
 );
 
+//create supplier request
+router.post(
+  "/supplierRequest",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  supplierController.supplierRequest
+);
+
+//get all supplier requests
+router.get(
+  "/getALLSupplierReq",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  supplierController.getALLSupplierReq
+);
+
+//send to supplier
+router.post(
+  "/sendToSupplier",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  supplierController.sendToSupplier
+);
+//send to station maneger
+router.patch(
+  "/sendToStation",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  supplierController.sendToStation
+);
+//get all station supplier requests
+router.get(
+  "/getStaSupplierReq",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  supplierController.getStaSupplierReq
+);
+
+//review request
+router.post(
+  "/reviewRequest",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  fileUpload(10, allowedTypesMap).fields([
+    { name: "carImage", maxCount: 1 },
+    { name: "specsImage", maxCount: 1 },
+    { name: "safetyImage", maxCount: 1 },
+    { name: "receiptImage", maxCount: 1 },
+  ]),
+  supplierController.reviewRequest
+);
 export default router;

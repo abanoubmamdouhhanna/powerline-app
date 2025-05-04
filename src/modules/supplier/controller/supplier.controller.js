@@ -7,6 +7,10 @@ import {
   uploadImageCloudinary,
 } from "../../../utils/cloudinaryHelpers.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
+import suppliesRequestModel from "../../../../DB/models/SuppliesRequest.Model.js";
+import userModel from "../../../../DB/models/User.model.js";
+import stationModel from "../../../../DB/models/Station.model.js";
+import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 
 //add supplier
 export const addSupplier = asyncHandler(async (req, res, next) => {
@@ -208,7 +212,7 @@ export const deleteSupplier = asyncHandler(async (req, res, next) => {
 
   const supplier = await supplierModel.findById(supplierId);
   if (!supplier) {
-    return next(new Error("Supplier not found", {cause:404}));
+    return next(new Error("Supplier not found", { cause: 404 }));
   }
 
   const folder = `${process.env.APP_NAME}/Suppliers/${supplier.customId}`;
@@ -224,5 +228,368 @@ export const deleteSupplier = asyncHandler(async (req, res, next) => {
   return res.status(200).json({
     status: "success",
     message: "Supplier deleted successfully",
+  });
+});
+//====================================================================================================================//
+//supplier request
+export const supplierRequest = asyncHandler(async (req, res, next) => {
+  const { employeeName, fuelAmount, fuelType } = req.body;
+  const userId = req.user?._id;
+
+  // Find the user making the request
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
+
+  if (!user.station) {
+    return next(
+      new Error("User is not assigned to any station", { cause: 400 })
+    );
+  }
+
+  // Fetch the associated station
+  const station = await stationModel.findById(user.station);
+  if (!station) {
+    return next(new Error("Station not found", { cause: 404 }));
+  }
+
+  if (!station.supplier) {
+    return next(
+      new Error("No supplier associated with this station", { cause: 400 })
+    );
+  }
+
+  // Create the supplier request
+  const newSupplierRequest = await suppliesRequestModel.create({
+    employeeName,
+    fuelAmount,
+    fuelType,
+    station: user.station,
+    supplier: station.supplier,
+  });
+
+  return res.status(201).json({
+    status: "success",
+    message: "Supplier request created successfully",
+    result: newSupplierRequest,
+  });
+});
+//====================================================================================================================//
+//get all supplier requests
+export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
+  const targetLang = req.language || "en";
+
+  const supplierRequests = await suppliesRequestModel
+    .find(
+      {},
+      "supplier station fuelAmount fuelType status carImage receiptImage safetyImage specsImage"
+    )
+    .populate("stationDetails", "stationName")
+    .populate(
+      "supplierDetails",
+      "supplierName phone supplierWhatsAppLink supplierAddress swiftCode IBAN"
+    )
+    .lean({ virtuals: true });
+
+  // Extract unique fuelTypes and statuses for batch translation
+  const uniqueFuelTypes = [
+    ...new Set(supplierRequests.map((req) => req.fuelType)),
+  ];
+  const uniqueStatuses = [
+    ...new Set(supplierRequests.map((req) => req.status)),
+  ];
+
+  // Translate fuelTypes and statuses
+  const translatedFuelTypes = {};
+  const translatedStatuses = {};
+
+  await Promise.all(
+    uniqueFuelTypes.map(async (type) => {
+      const { translatedText } = await translateAutoDetect(type, targetLang);
+      translatedFuelTypes[type] = translatedText;
+    })
+  );
+
+  await Promise.all(
+    uniqueStatuses.map(async (status) => {
+      const { translatedText } = await translateAutoDetect(status, targetLang);
+      translatedStatuses[status] = translatedText;
+    })
+  );
+
+  // Format final result with translations
+  const formattedRequests = supplierRequests.map((req) => {
+    const stationName =
+      req.stationDetails?.[0]?.stationName?.[targetLang] ||
+      req.stationDetails?.[0]?.stationName?.en;
+
+    const supplierData = req.supplierDetails?.[0];
+
+    const supplierName =
+      supplierData?.supplierName?.[targetLang] ||
+      supplierData?.supplierName?.en;
+    const supplierAddress =
+      supplierData?.supplierAddress?.[targetLang] ||
+      supplierData?.supplierAddress?.en;
+
+    return {
+      _id: req._id,
+      station: req.station,
+      supplier: req.supplier,
+      fuelAmount: req.fuelAmount,
+      fuelType: translatedFuelTypes[req.fuelType] || req.fuelType,
+      status: translatedStatuses[req.status] || req.status,
+      stationName,
+      supplierName,
+      phone: supplierData?.phone,
+      supplierWhatsAppLink: supplierData?.supplierWhatsAppLink,
+      supplierAddress,
+      swiftCode: supplierData?.swiftCode,
+      IBAN: supplierData?.IBAN,
+      carImage: req.carImage,
+      receiptImage: req.receiptImage,
+      safetyImage: req.safetyImage,
+      specsImage: req.specsImage,
+    };
+  });
+
+  return res.status(200).json({
+    status: "success",
+    result: formattedRequests,
+  });
+});
+//====================================================================================================================//
+//send to supplier
+export const sendToSupplier = asyncHandler(async (req, res, next) => {
+  const { reqId, stationName, fuelType, fuelAmount, supplierWhatsAppLink } =
+    req.body;
+  const targetLang = req.language || "en";
+
+  // Static labels to translate
+  const labels = [
+    "New Fuel Request 🚛:",
+    "Station",
+    "Fuel Type",
+    "Fuel Amount",
+    "Liters",
+  ];
+
+  // Translate all labels in parallel
+  const translations = await Promise.all(
+    labels.map((label) => translateAutoDetect(label, targetLang))
+  );
+
+  // Destructure translated values
+  const [
+    translatedTitle,
+    translatedStation,
+    translatedFuelType,
+    translatedFuelAmount,
+    translatedLiters,
+  ] = translations.map((t) => t.translatedText);
+
+  // Construct final translated message
+  const message = `${translatedTitle}
+- ${translatedStation}: ${stationName}
+- ${translatedFuelType}: ${fuelType}
+- ${translatedFuelAmount}: ${fuelAmount} ${translatedLiters}`;
+
+  const encodedMessage = encodeURIComponent(message);
+
+  const whatsappURL = `${supplierWhatsAppLink}?text=${encodedMessage}`;
+
+  // Update the request status
+  await suppliesRequestModel.findByIdAndUpdate(
+    reqId,
+    { status: "Waiting" },
+    { new: true }
+  );
+
+  return res.status(200).json({
+    status: "success",
+    whatsappURL,
+  });
+});
+//====================================================================================================================//
+// Send to station manager with totalCost calculation
+export const sendToStation = asyncHandler(async (req, res, next) => {
+  const { reqId, paymentMethod, totalLiters, pricePerLiter } = req.body;
+
+  // Build update object
+  const updateData = {
+    paymentMethod,
+    totalLiters,
+    pricePerLiter,
+    status: "Review underway",
+  };
+
+  // Manually calculate totalCost if both values are present
+  if (totalLiters != null && pricePerLiter != null) {
+    updateData.totalCost = totalLiters * pricePerLiter;
+  }
+
+  const supplierReq = await suppliesRequestModel.findByIdAndUpdate(
+    reqId,
+    updateData,
+    { new: true }
+  );
+
+  return res.status(200).json({
+    status: "success",
+    result: supplierReq,
+  });
+});
+//====================================================================================================================//
+//get all station supplier requests
+export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+  const targetLang = req.language || "en";
+
+  // Validate user
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return next(new Error("User not found", { cause: 404 }));
+  }
+
+  if (!user.station) {
+    return next(
+      new Error("User is not assigned to any station", { cause: 400 })
+    );
+  }
+
+  const station = await stationModel.findById(user.station);
+  if (!station) {
+    return next(new Error("Station not found", { cause: 404 }));
+  }
+
+  // Get requests for this station
+  const supplierRequests = await suppliesRequestModel
+    .find(
+      { station: user.station },
+      "supplier station fuelAmount fuelType status paymentMethod pricePerLiter totalLiters totalCost"
+    )
+    .populate("stationDetails", "stationName")
+    .populate(
+      "supplierDetails",
+      "supplierName phone supplierWhatsAppLink supplierAddress swiftCode IBAN"
+    )
+    .lean({ virtuals: true });
+
+  // Extract unique fuelTypes and statuses
+  const uniqueFuelTypes = [
+    ...new Set(supplierRequests.map((req) => req.fuelType)),
+  ];
+  const uniqueStatuses = [
+    ...new Set(supplierRequests.map((req) => req.status)),
+  ];
+
+  // Translate them
+  const translatedFuelTypes = {};
+  const translatedStatuses = {};
+
+  await Promise.all(
+    uniqueFuelTypes.map(async (type) => {
+      const { translatedText } = await translateAutoDetect(type, targetLang);
+      translatedFuelTypes[type] = translatedText;
+    })
+  );
+
+  await Promise.all(
+    uniqueStatuses.map(async (status) => {
+      const { translatedText } = await translateAutoDetect(status, targetLang);
+      translatedStatuses[status] = translatedText;
+    })
+  );
+
+  // Format final result
+  const formattedRequests = supplierRequests.map((req) => {
+    const stationName =
+      req.stationDetails?.[0]?.stationName?.[targetLang] ||
+      req.stationDetails?.[0]?.stationName?.en;
+
+    const supplierData = req.supplierDetails?.[0];
+
+    const supplierName =
+      supplierData?.supplierName?.[targetLang] ||
+      supplierData?.supplierName?.en;
+
+    const supplierAddress =
+      supplierData?.supplierAddress?.[targetLang] ||
+      supplierData?.supplierAddress?.en;
+
+    return {
+      _id: req._id,
+      station: req.station,
+      supplier: req.supplier,
+      fuelAmount: req.fuelAmount,
+      fuelType: translatedFuelTypes[req.fuelType] || req.fuelType,
+      status: translatedStatuses[req.status] || req.status,
+      paymentMethod: req.paymentMethod,
+      pricePerLiter: req.pricePerLiter,
+      totalLiters: req.totalLiters,
+      totalCost: req.totalCost,
+      stationName,
+      supplierName,
+      phone: supplierData?.phone,
+      supplierWhatsAppLink: supplierData?.supplierWhatsAppLink,
+      supplierAddress,
+      swiftCode: supplierData?.swiftCode,
+      IBAN: supplierData?.IBAN,
+    };
+  });
+
+  return res.status(200).json({
+    status: "success",
+    result: formattedRequests,
+  });
+});
+//====================================================================================================================//
+//review request
+export const reviewRequest = asyncHandler(async (req, res, next) => {
+  const { reqId, isCarCompleted, matchingSpecs, matchingSafety } = req.body;
+
+  const customId = nanoid();
+  const folder = `${process.env.APP_NAME}/SupplierRequest/${customId}`;
+
+  // Helper to safely extract and upload a file field
+  const uploadIfExists = async (fieldName, filenameLabel) => {
+    const file = req.files?.[fieldName]?.[0];
+    return file
+      ? await uploadImageCloudinary(
+          file,
+          folder,
+          `${customId}_${filenameLabel}`
+        )
+      : null;
+  };
+
+  // Upload all images in parallel
+  const [carImage, specsImage, safetyImage, receiptImage] = await Promise.all([
+    uploadIfExists("carImage", "carImage"),
+    uploadIfExists("specsImage", "specsImage"),
+    uploadIfExists("safetyImage", "safetyImage"),
+    uploadIfExists("receiptImage", "receiptImage"),
+  ]);
+
+  // Update request
+  const supplierReq = await suppliesRequestModel.findByIdAndUpdate(
+    reqId,
+    {
+      carImage,
+      specsImage,
+      safetyImage,
+      receiptImage,
+      isCarCompleted,
+      matchingSpecs,
+      matchingSafety,
+    },
+    { new: true }
+  );
+
+  return res.status(200).json({
+    status: "success",
+    message: "Order reviewed successfully",
+    result: supplierReq,
   });
 });
