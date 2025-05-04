@@ -27,6 +27,8 @@ router.patch(
 //get all suppliers
 router.get(
   "/getAllSuppliers",
+  isValid(headersSchema, true),
+  auth(["employee"]),
   supplierController.getAllSuppliers
 );
 
@@ -57,8 +59,6 @@ router.post(
 //get all supplier requests
 router.get(
   "/getALLSupplierReq",
-  isValid(headersSchema, true),
-  auth(["employee"]),
   supplierController.getALLSupplierReq
 );
 
