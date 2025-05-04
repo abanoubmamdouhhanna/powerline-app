@@ -11,6 +11,7 @@ import suppliesRequestModel from "../../../../DB/models/SuppliesRequest.Model.js
 import userModel from "../../../../DB/models/User.model.js";
 import stationModel from "../../../../DB/models/Station.model.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
+import { ApiFeatures } from "../../../utils/apiFeatures.js";
 
 //add supplier
 export const addSupplier = asyncHandler(async (req, res, next) => {
@@ -442,33 +443,131 @@ export const sendToStation = asyncHandler(async (req, res, next) => {
 });
 //====================================================================================================================//
 //get all station supplier requests
+// export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
+//   const userId = req.user._id;
+//   const targetLang = req.language || "en";
+
+//   // Validate user
+//   const user = await userModel.findById(userId);
+//   if (!user) {
+//     return next(new Error("User not found", { cause: 404 }));
+//   }
+
+//   if (!user.station) {
+//     return next(
+//       new Error("User is not assigned to any station", { cause: 400 })
+//     );
+//   }
+
+//   const station = await stationModel.findById(user.station);
+//   if (!station) {
+//     return next(new Error("Station not found", { cause: 404 }));
+//   }
+
+//   // Get requests for this station
+//   const supplierRequests = await suppliesRequestModel
+//     .find(
+//       { station: user.station },
+//       "supplier station fuelAmount fuelType status paymentMethod pricePerLiter totalLiters totalCost"
+//     )
+//     .populate("stationDetails", "stationName")
+//     .populate(
+//       "supplierDetails",
+//       "supplierName phone supplierWhatsAppLink supplierAddress swiftCode IBAN"
+//     )
+//     .lean({ virtuals: true });
+
+//   // Extract unique fuelTypes and statuses
+//   const uniqueFuelTypes = [
+//     ...new Set(supplierRequests.map((req) => req.fuelType)),
+//   ];
+//   const uniqueStatuses = [
+//     ...new Set(supplierRequests.map((req) => req.status)),
+//   ];
+
+//   // Translate them
+//   const translatedFuelTypes = {};
+//   const translatedStatuses = {};
+
+//   await Promise.all(
+//     uniqueFuelTypes.map(async (type) => {
+//       const { translatedText } = await translateAutoDetect(type, targetLang);
+//       translatedFuelTypes[type] = translatedText;
+//     })
+//   );
+
+//   await Promise.all(
+//     uniqueStatuses.map(async (status) => {
+//       const { translatedText } = await translateAutoDetect(status, targetLang);
+//       translatedStatuses[status] = translatedText;
+//     })
+//   );
+
+//   // Format final result
+//   const formattedRequests = supplierRequests.map((req) => {
+//     const stationName =
+//       req.stationDetails?.[0]?.stationName?.[targetLang] ||
+//       req.stationDetails?.[0]?.stationName?.en;
+
+//     const supplierData = req.supplierDetails?.[0];
+
+//     const supplierName =
+//       supplierData?.supplierName?.[targetLang] ||
+//       supplierData?.supplierName?.en;
+
+//     const supplierAddress =
+//       supplierData?.supplierAddress?.[targetLang] ||
+//       supplierData?.supplierAddress?.en;
+
+//     return {
+//       _id: req._id,
+//       station: req.station,
+//       supplier: req.supplier,
+//       fuelAmount: req.fuelAmount,
+//       fuelType: translatedFuelTypes[req.fuelType] || req.fuelType,
+//       status: translatedStatuses[req.status] || req.status,
+//       paymentMethod: req.paymentMethod,
+//       pricePerLiter: req.pricePerLiter,
+//       totalLiters: req.totalLiters,
+//       totalCost: req.totalCost,
+//       stationName,
+//       supplierName,
+//       phone: supplierData?.phone,
+//       supplierWhatsAppLink: supplierData?.supplierWhatsAppLink,
+//       supplierAddress,
+//       swiftCode: supplierData?.swiftCode,
+//       IBAN: supplierData?.IBAN,
+//     };
+//   });
+
+//   return res.status(200).json({
+//     status: "success",
+//     result: formattedRequests,
+//   });
+// });
 export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
   const targetLang = req.language || "en";
 
-  // Validate user
   const user = await userModel.findById(userId);
-  if (!user) {
-    return next(new Error("User not found", { cause: 404 }));
-  }
-
-  if (!user.station) {
+  if (!user) return next(new Error("User not found", { cause: 404 }));
+  if (!user.station)
     return next(
       new Error("User is not assigned to any station", { cause: 400 })
     );
-  }
 
   const station = await stationModel.findById(user.station);
-  if (!station) {
-    return next(new Error("Station not found", { cause: 404 }));
-  }
+  if (!station) return next(new Error("Station not found", { cause: 404 }));
 
-  // Get requests for this station
-  const supplierRequests = await suppliesRequestModel
-    .find(
-      { station: user.station },
-      "supplier station fuelAmount fuelType status paymentMethod pricePerLiter totalLiters totalCost"
-    )
+  // Step 1: Build the base query
+  let mongooseQuery = suppliesRequestModel.find({ station: user.station });
+
+  // Step 2: Apply ApiFeatures (filter, paginate, etc.)
+  const apiFeatures = new ApiFeatures(mongooseQuery, req.query).filter();
+  const paginationResult = await apiFeatures.paginate(); 
+
+  // Step 3: Add populate and lean after features
+  const supplierRequests = await apiFeatures.mongooseQuery
     .populate("stationDetails", "stationName")
     .populate(
       "supplierDetails",
@@ -476,7 +575,7 @@ export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
     )
     .lean({ virtuals: true });
 
-  // Extract unique fuelTypes and statuses
+  // Step 4: Translate fuel types and statuses
   const uniqueFuelTypes = [
     ...new Set(supplierRequests.map((req) => req.fuelType)),
   ];
@@ -484,7 +583,6 @@ export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
     ...new Set(supplierRequests.map((req) => req.status)),
   ];
 
-  // Translate them
   const translatedFuelTypes = {};
   const translatedStatuses = {};
 
@@ -502,7 +600,6 @@ export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
     })
   );
 
-  // Format final result
   const formattedRequests = supplierRequests.map((req) => {
     const stationName =
       req.stationDetails?.[0]?.stationName?.[targetLang] ||
@@ -541,9 +638,11 @@ export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
+    pagination: paginationResult,
     result: formattedRequests,
   });
 });
+
 //====================================================================================================================//
 //review request
 export const reviewRequest = asyncHandler(async (req, res, next) => {

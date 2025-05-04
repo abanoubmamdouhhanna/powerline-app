@@ -12,6 +12,7 @@ export const auth = (accessRoles = []) => {
       payload: authorization,
       signature: process.env.SIGNATURE,
     });
+    
     if (!decoded?.id) {
       return next(new Error("In-valid token payload", { cause: 401 }));
     }
