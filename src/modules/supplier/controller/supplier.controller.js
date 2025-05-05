@@ -538,7 +538,7 @@ export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
 
     return {
       _id: req._id,
-      employeeName:req.employeeName,
+      employeeName: req.employeeName,
       station: req.station,
       supplier: req.supplier,
       fuelAmount: req.fuelAmount,
@@ -605,7 +605,7 @@ export const reviewRequest = asyncHandler(async (req, res, next) => {
       isCarCompleted,
       matchingSpecs,
       matchingSafety,
-      customId
+      customId,
     },
     { new: true }
   );
@@ -636,9 +636,35 @@ export const completeReq = asyncHandler(async (req, res, next) => {
 //delete request
 export const deleteReq = asyncHandler(async (req, res, next) => {
   const { reqId } = req.params;
+
   const request = await suppliesRequestModel.findById(reqId);
   if (!request) return next(new Error("Request not found", { cause: 404 }));
 
   const folderBase = `${process.env.APP_NAME}/SupplierRequest/${request.customId}`;
 
+  // Destroy individual images from Cloudinary
+  const imageFields = ["carImage", "safetyImage", "specsImage", "receiptImage"];
+  try {
+    for (const field of imageFields) {
+      const imageUrl = request[field];
+      if (imageUrl) {
+        await destroyCloudinaryFileFromUrl(imageUrl);
+      }
+    }
+
+    // Optionally delete the folder after removing resources
+    await deleteFromCloudinary(folderBase);
+  } catch (error) {
+    return next(
+      new Error("Failed to delete images from Cloudinary", { cause: 500 })
+    );
+  }
+
+  // Delete the request from DB
+  await request.deleteOne();
+
+  return res.status(200).json({
+    status: "success",
+    message: "Request and associated images deleted successfully.",
+  });
 });
