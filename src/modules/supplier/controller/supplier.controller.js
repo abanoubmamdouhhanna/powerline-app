@@ -538,6 +538,7 @@ export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
 
     return {
       _id: req._id,
+      employeeName:req.employeeName,
       station: req.station,
       supplier: req.supplier,
       fuelAmount: req.fuelAmount,
@@ -547,7 +548,7 @@ export const getStaSupplierReq = asyncHandler(async (req, res, next) => {
       pricePerLiter: req.pricePerLiter,
       totalLiters: req.totalLiters,
       totalCost: req.totalCost,
-      orderDate:req.orderDate,
+      orderDate: req.orderDate,
       stationName,
       supplierName,
       phone: supplierData?.phone,
@@ -604,6 +605,7 @@ export const reviewRequest = asyncHandler(async (req, res, next) => {
       isCarCompleted,
       matchingSpecs,
       matchingSafety,
+      customId
     },
     { new: true }
   );
@@ -629,4 +631,14 @@ export const completeReq = asyncHandler(async (req, res, next) => {
     message: "Supplier request completed successfully",
     result: completeReq,
   });
+});
+//====================================================================================================================//
+//delete request
+export const deleteReq = asyncHandler(async (req, res, next) => {
+  const { reqId } = req.params;
+  const request = await suppliesRequestModel.findById(reqId);
+  if (!request) return next(new Error("Request not found", { cause: 404 }));
+
+  const folderBase = `${process.env.APP_NAME}/SupplierRequest/${request.customId}`;
+
 });

@@ -102,4 +102,11 @@ router.patch(
   auth(["employee"]),
   supplierController.completeReq
 );
+//delete supplier request
+router.delete(
+  "/deleteReq/:reqId",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  supplierController.deleteReq
+);
 export default router;
