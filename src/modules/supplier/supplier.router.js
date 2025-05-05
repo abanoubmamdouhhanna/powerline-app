@@ -32,7 +32,7 @@ router.get(
   supplierController.getAllSuppliers
 );
 
-//get supplier
+//get sp supplier
 router.get(
   "/getSpSupplier/:supplierId",
   isValid(headersSchema, true),
