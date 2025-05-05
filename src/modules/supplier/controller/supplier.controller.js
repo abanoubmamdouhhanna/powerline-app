@@ -126,7 +126,7 @@ export const updateSupplier = asyncHandler(async (req, res, next) => {
 
   const uploadResult = await imageUploadPromise;
 
-  updates.supplierImage = uploadResult?.secure_url || supplier.supplierImage;
+  updates.supplierImage = uploadResult|| supplier.supplierImage;
 
   // Apply updates
   const updatedSupplier = await supplierModel.findByIdAndUpdate(
