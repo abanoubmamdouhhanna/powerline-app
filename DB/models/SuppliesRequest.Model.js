@@ -61,7 +61,7 @@ const suppliesRequestSchema = new Schema(
     // Request Status and Approval
     status: {
       type: String,
-      enum: ["Pending", "Waiting", "Review underway","Completed"],
+      enum: ["Pending", "Waiting", "Review underway", "Completed"],
       default: "Pending",
     },
 
@@ -69,19 +69,16 @@ const suppliesRequestSchema = new Schema(
     isCarCompleted: {
       type: String,
       enum: ["Yes", "No"],
-      default: "Yes",
     },
     carImage: String,
     matchingSpecs: {
       type: String,
       enum: ["Yes", "No"],
-      default: "Yes",
     },
     specsImage: String,
     matchingSafety: {
       type: String,
       enum: ["Yes", "No"],
-      default: "Yes",
     },
     safetyImage: String,
     receiptImage: String,
