@@ -59,6 +59,13 @@ router.post(
 //get all supplier requests
 router.get("/getALLSupplierReq", supplierController.getALLSupplierReq);
 
+//get sp supplier request
+router.get(
+  "/getSpReq/:reqId",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  supplierController.getSpReq
+);
 //send to supplier
 router.post(
   "/sendToSupplier",

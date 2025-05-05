@@ -126,7 +126,7 @@ export const updateSupplier = asyncHandler(async (req, res, next) => {
 
   const uploadResult = await imageUploadPromise;
 
-  updates.supplierImage = uploadResult|| supplier.supplierImage;
+  updates.supplierImage = uploadResult || supplier.supplierImage;
 
   // Apply updates
   const updatedSupplier = await supplierModel.findByIdAndUpdate(
@@ -289,7 +289,7 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
     .populate("stationDetails", "stationName")
     .populate(
       "supplierDetails",
-      "supplierName phone supplierWhatsAppLink supplierAddress swiftCode IBAN"
+      "supplierName phone supplierWhatsAppLink supplierAddress swiftCode IBAN supplierImage"
     )
     .lean({ virtuals: true });
 
@@ -359,6 +359,7 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
       status: translatedStatuses[req.status] || req.status,
       stationName,
       supplierName,
+      supplierImage: supplierData.supplierImage,
       phone: supplierData?.phone,
       supplierWhatsAppLink: supplierData?.supplierWhatsAppLink,
       supplierAddress,
@@ -380,6 +381,17 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
   return res.status(200).json({
     status: "success",
     result: formattedRequests,
+  });
+});
+//====================================================================================================================//
+//get sp supplier request
+export const getSpReq = asyncHandler(async (req, res, next) => {
+  const { reqId } = req.params;
+  const request = await suppliesRequestModel.findById(reqId);
+  if (!request) return next(new Error("Request not found", { cause: 404 }));
+  return res.status(200).json({
+    status: "success",
+    result: request,
   });
 });
 

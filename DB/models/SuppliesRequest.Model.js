@@ -41,7 +41,7 @@ const suppliesRequestSchema = new Schema(
     // Payment Details
     paymentMethod: {
       type: String,
-      enum: ["Bank Transfer", "Cash", "Credit Card", "Other"],
+      enum: ["Bank Transfer", "Cash", "Credit Card"],
     },
     paymentReciptImage: String,
 
@@ -69,16 +69,21 @@ const suppliesRequestSchema = new Schema(
     isCarCompleted: {
       type: String,
       enum: ["Yes", "No"],
+      default: "No",
     },
     carImage: String,
     matchingSpecs: {
       type: String,
       enum: ["Yes", "No"],
+      default: "No",
+
     },
     specsImage: String,
     matchingSafety: {
       type: String,
       enum: ["Yes", "No"],
+      default: "No",
+
     },
     safetyImage: String,
     receiptImage: String,
