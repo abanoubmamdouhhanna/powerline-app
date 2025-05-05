@@ -386,15 +386,105 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //get sp supplier request
 export const getSpReq = asyncHandler(async (req, res, next) => {
+  const targetLang = req.language || "en";
   const { reqId } = req.params;
-  const request = await suppliesRequestModel.findById(reqId);
-  if (!request) return next(new Error("Request not found", { cause: 404 }));
+
+  // Use findById instead of find for single document retrieval
+  const supplierRequest = await suppliesRequestModel
+    .findById(
+      reqId,
+      "supplier station fuelAmount fuelType status carImage receiptImage safetyImage specsImage isCarCompleted matchingSpecs matchingSafety"
+    )
+    .populate("stationDetails", "stationName")
+    .populate(
+      "supplierDetails",
+      "supplierName phone supplierWhatsAppLink supplierAddress swiftCode IBAN supplierImage"
+    )
+    .lean({ virtuals: true });
+
+  // Check if document exists
+  if (!supplierRequest) {
+    return res.status(404).json({
+      status: "fail",
+      message: "Supplier request not found",
+    });
+  }
+
+  // For a single document, we don't need Sets to extract unique values
+  // Just translate the individual fields directly
+  const translatedValues = {
+    fuelType: await translateAutoDetect(
+      supplierRequest.fuelType?.toString(),
+      targetLang
+    ),
+    status: await translateAutoDetect(
+      supplierRequest.status?.toString(),
+      targetLang
+    ),
+    matchingSpecs: await translateAutoDetect(
+      supplierRequest.matchingSpecs?.toString(),
+      targetLang
+    ),
+    matchingSafety: await translateAutoDetect(
+      supplierRequest.matchingSafety?.toString(),
+      targetLang
+    ),
+    isCarCompleted: await translateAutoDetect(
+      supplierRequest.isCarCompleted?.toString(),
+      targetLang
+    ),
+  };
+
+  // Get station and supplier details
+  const stationName =
+    supplierRequest.stationDetails?.[0]?.stationName?.[targetLang] ||
+    supplierRequest.stationDetails?.[0]?.stationName?.en;
+
+  const supplierData = supplierRequest.supplierDetails?.[0];
+
+  const supplierName =
+    supplierData?.supplierName?.[targetLang] || supplierData?.supplierName?.en;
+  const supplierAddress =
+    supplierData?.supplierAddress?.[targetLang] ||
+    supplierData?.supplierAddress?.en;
+
+  // Format the result for a single document
+  const formattedRequest = {
+    _id: supplierRequest._id,
+    station: supplierRequest.station,
+    supplier: supplierRequest.supplier,
+    fuelAmount: supplierRequest.fuelAmount,
+    fuelType:
+      translatedValues.fuelType?.translatedText || supplierRequest.fuelType,
+    status: translatedValues.status?.translatedText || supplierRequest.status,
+    stationName,
+    supplierName,
+    supplierImage: supplierData?.supplierImage,
+    phone: supplierData?.phone,
+    supplierWhatsAppLink: supplierData?.supplierWhatsAppLink,
+    supplierAddress,
+    swiftCode: supplierData?.swiftCode,
+    IBAN: supplierData?.IBAN,
+    carImage: supplierRequest.carImage,
+    receiptImage: supplierRequest.receiptImage,
+    safetyImage: supplierRequest.safetyImage,
+    specsImage: supplierRequest.specsImage,
+    matchingSpecs:
+      translatedValues.matchingSpecs?.translatedText ||
+      supplierRequest.matchingSpecs,
+    matchingSafety:
+      translatedValues.matchingSafety?.translatedText ||
+      supplierRequest.matchingSafety,
+    isCarCompleted:
+      translatedValues.isCarCompleted?.translatedText ||
+      supplierRequest.isCarCompleted,
+  };
+
   return res.status(200).json({
     status: "success",
-    result: request,
+    result: formattedRequest,
   });
 });
-
 //====================================================================================================================//
 //send to supplier
 export const sendToSupplier = asyncHandler(async (req, res, next) => {
