@@ -74,7 +74,7 @@ router.post(
   supplierController.sendToSupplier
 );
 //send to station maneger
-router.patch(
+router.post(
   "/sendToStation",
   isValid(headersSchema, true),
   auth(["employee"]),
