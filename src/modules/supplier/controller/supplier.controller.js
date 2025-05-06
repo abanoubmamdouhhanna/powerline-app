@@ -559,8 +559,8 @@ if (req.body.status!= "Review underway") {
     updateData.totalCost = totalLiters * pricePerLiter;
   }
 
-  const supplierReq = await suppliesRequestModel.findByIdAndUpdate(
-    reqId,
+  const supplierReq = await suppliesRequestModel.findOneAndUpdate(
+    {_id:reqId},
     updateData,
     { new: true }
   );
