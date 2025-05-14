@@ -539,10 +539,9 @@ export const addUserDocument = asyncHandler(async (req, res, next) => {
 });
 //====================================================================================================================//
 //get all employees
-
 export const getAllEmployees = asyncHandler(async (req, res, next) => {
   const targetLang = req.language || "en"; // fallback to 'en' if no language is specified
-  
+
   const employees = await userModel.find(
     { role: "employee" },
     "name email imageUrl employeeCode timeWork"
@@ -550,12 +549,17 @@ export const getAllEmployees = asyncHandler(async (req, res, next) => {
 
   const translatedEmployees = await Promise.all(
     employees.map(async (emp) => {
-      const employeeName = emp.name ? (emp.name[targetLang] || emp.name.en) : "N/A";
-      
-      const { translatedText: employeeTimeWork } = await translateAutoDetect(emp.timeWork, req.language);
+      const employeeName = emp.name
+        ? emp.name[targetLang] || emp.name.en
+        : "N/A";
+
+      const { translatedText: employeeTimeWork } = await translateAutoDetect(
+        emp.timeWork,
+        req.language
+      );
       return {
         ...emp.toObject(),
-        name: employeeName, 
+        name: employeeName,
         timeWork: employeeTimeWork,
       };
     })
@@ -567,8 +571,67 @@ export const getAllEmployees = asyncHandler(async (req, res, next) => {
     result: translatedEmployees,
   });
 });
+//====================================================================================================================//
+//get specific employee
+export const getSpecificEmployee = asyncHandler(async (req, res, next) => {
+  const targetLang = req.language || "en";
+  const { employeeId } = req.params;
 
+  const employee = await userModel.findById(employeeId);
+  if (!employee) {
+    return next(new Error("Employee not found", { cause: 404 }));
+  }
 
+  // Translate all multilingual fields
+  const translatedEmployee = {
+    ...employee.toObject(),
+
+    name: employee.name?.[targetLang] || employee.name?.en || "N/A",
+    address: employee.address?.[targetLang] || employee.address?.en || "N/A",
+    city: employee.city?.[targetLang] || employee.city?.en || "N/A",
+    nationality:
+      employee.nationality?.[targetLang] || employee.nationality?.en || "N/A",
+
+    // Translate documents titles
+    documents:
+      employee.documents?.map((doc) => ({
+        ...doc.toObject(),
+        title:
+          doc.title?.[targetLang] ||
+          doc.title?.en ||
+          Object.values(doc.title)[0],
+      })) || [],
+  };
+
+  if (employee.timeWork) {
+    const { translatedText: timeWorkTranslated } = await translateAutoDetect(
+      employee.timeWork,
+      targetLang
+    );
+    translatedEmployee.timeWork = timeWorkTranslated;
+  }
+
+  // Translate workFor ("stations" or "company")
+  if (employee.workFor) {
+    const { translatedText: workForTranslated } = await translateAutoDetect(
+      employee.workFor,
+      targetLang
+    );
+    translatedEmployee.workFor = workForTranslated;
+  }
+
+  if (employee.gender) {
+    const { translatedText: genderTranslated } = await translateAutoDetect(
+      employee.gender,
+      targetLang
+    );
+    translatedEmployee.gender = genderTranslated;
+  }
+  return res.status(200).json({
+    status: "success",
+    result: translatedEmployee,
+  });
+});
 
 //====================================================================================================================//
 //user attendance
@@ -608,7 +671,10 @@ export const getJobTasks = asyncHandler(async (req, res, next) => {
 
   const cleaningTasks = await Promise.all(
     cleaningTasksRaw.map(async (task) => {
-      const { translatedText } = await translateAutoDetect(task.employeeName, targetLang);
+      const { translatedText } = await translateAutoDetect(
+        task.employeeName,
+        targetLang
+      );
 
       return {
         _id: task._id,
@@ -639,7 +705,10 @@ export const getJobTasks = asyncHandler(async (req, res, next) => {
 
   const inventoryTasks = await Promise.all(
     inventoryTasksRaw.map(async (task) => {
-      const { translatedText } = await translateAutoDetect(task.employeeName, targetLang);
+      const { translatedText } = await translateAutoDetect(
+        task.employeeName,
+        targetLang
+      );
 
       return {
         _id: task._id,
@@ -681,4 +750,3 @@ export const getJobTasks = asyncHandler(async (req, res, next) => {
     },
   });
 });
-

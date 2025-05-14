@@ -174,7 +174,10 @@ export const changeStatus = asyncHandler(async (req, res, next) => {
 export const getAllTasks = asyncHandler(async (req, res, next) => {
   const targetLang = req.language || "en";
 
-  const mongooseQuery = toDoModel.find({ createdBy: req.user._id });
+  // Prepare the mongoose query with user population
+  const mongooseQuery = toDoModel
+    .find({ createdBy: req.user._id })
+    .populate("user", "name email imageUrl"); // Include name and email from user
 
   // 🔥 Parse date strings to Date objects
   const dateFields = ["startDate", "deadline"];
@@ -189,10 +192,12 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
     }
   }
 
+  // Apply filters and pagination
   const apiFeatures = new ApiFeatures(mongooseQuery, req.query).filter();
   const paginationResult = await apiFeatures.paginate();
   const rawTasks = await apiFeatures.mongooseQuery;
 
+  // Translate fields
   const translatedTasks = rawTasks.map((task) => {
     const translatedTaskName =
       typeof task.taskName === "object"
@@ -227,15 +232,32 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
         }))
       : [];
 
+    // Translate user name if populated
+    const translatedUser = task.user
+      ? {
+          _id: task.user._id,
+          email: task.user.email,
+          avatar: task.user.imageUrl,
+          name:
+            typeof task.user.name === "object"
+              ? task.user.name[targetLang] ||
+                task.user.name.en ||
+                Object.values(task.user.name)[0]
+              : task.user.name,
+        }
+      : null;
+
     return {
       ...task.toObject(),
       taskName: translatedTaskName,
       taskDetails: translatedTaskDetails,
       comment: translatedComment,
       documents: translatedDocuments,
+      user: translatedUser,
     };
   });
 
+  // Send response
   return res.status(200).json({
     message: "Success",
     count: translatedTasks.length,

@@ -73,7 +73,13 @@ router.get(
   auth(["employee"]),
   hrController.getAllEmployees
 );
-
+//get specific employee
+router.get(
+  "/getSpecificEmployee/:employeeId",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  hrController.getSpecificEmployee
+);
 //user attendance
 router.get(
   "/userAttendance",
