@@ -274,6 +274,7 @@ export const updateTask = asyncHandler(async (req, res, next) => {
   const { taskId } = req.params;
   const { user, taskName, startDate, deadline, taskDetails, comment } =
     req.body;
+  const targetLang = req.language || "en"; // Get language from request or default to 'en'
 
   const task = await toDoModel.findById(taskId);
   if (!task) {
@@ -297,10 +298,39 @@ export const updateTask = asyncHandler(async (req, res, next) => {
 
   await task.save();
 
+  // Prepare the response with translated fields
+  const translateField = (field) => {
+    if (!field) return null;
+    return typeof field === "object"
+      ? field[targetLang] || field.en || Object.values(field)[0]
+      : field;
+  };
+
+  const responseTask = {
+    _id: task._id,
+    user: task.user,
+    taskName: translateField(task.taskName),
+    startDate: task.startDate,
+    deadline: task.deadline,
+    taskDetails: translateField(task.taskDetails),
+    comment: translateField(task.comment),
+    // Include any other fields you want to return
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+  };
+
+  // If there are documents with titles that need translation
+  if (task.documents && Array.isArray(task.documents)) {
+    responseTask.documents = task.documents.map((doc) => ({
+      ...doc.toObject(),
+      title: translateField(doc.title),
+    }));
+  }
+
   return res.status(200).json({
     status: "success",
     message: "Task updated successfully.",
-    task,
+    task: responseTask,
   });
 });
 //====================================================================================================================//
