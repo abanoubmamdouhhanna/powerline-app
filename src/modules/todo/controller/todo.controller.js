@@ -467,4 +467,3 @@ export const addTaskDocument = asyncHandler(async (req, res, next) => {
     task,
   });
 });
-

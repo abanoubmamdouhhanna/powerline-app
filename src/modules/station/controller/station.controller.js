@@ -320,19 +320,40 @@ export const getAllStations = asyncHandler(async (req, res, next) => {
 
   const stations = await stationModel
     .find({}, "stationName employees")
-    .populate("stationEmployees", "name imageUrl permissions");
+    .populate("stationEmployees", "name imageUrl permissions"); // assuming 'name' is the field that might be translated
 
   const enrichedStations = stations.map((station) => {
-    const nameField = station.stationName;
-    const translatedName =
-      typeof nameField === "object"
-        ? nameField[targetLang] || nameField.en || Object.values(nameField)[0]
-        : nameField;
+    // Translate station name
+    const stationNameField = station.stationName;
+    const translatedStationName =
+      typeof stationNameField === "object"
+        ? stationNameField[targetLang] ||
+          stationNameField.en ||
+          Object.values(stationNameField)[0]
+        : stationNameField;
+
+    // Translate employee names
+    const translatedEmployees = station.stationEmployees.map((employee) => {
+      const employeeNameField = employee.name;
+      const translatedEmployeeName =
+        typeof employeeNameField === "object"
+          ? employeeNameField[targetLang] ||
+            employeeNameField.en ||
+            Object.values(employeeNameField)[0]
+          : employeeNameField;
+
+      return {
+        _id: employee._id,
+        name: translatedEmployeeName,
+        imageUrl: employee.imageUrl,
+        permissions: employee.permissions,
+      };
+    });
 
     return {
       _id: station._id,
-      stationName: translatedName,
-      stationEmployees: station.stationEmployees,
+      stationName: translatedStationName,
+      stationEmployees: translatedEmployees,
       employeeCount: station.stationEmployees.length,
     };
   });
@@ -342,7 +363,6 @@ export const getAllStations = asyncHandler(async (req, res, next) => {
     result: enrichedStations,
   });
 });
-
 //====================================================================================================================//
 //get sp station
 export const getSpStation = asyncHandler(async (req, res, next) => {
@@ -359,13 +379,32 @@ export const getSpStation = asyncHandler(async (req, res, next) => {
     return fieldObj;
   };
 
+  const stationObj = station.toObject();
+
+  // Translate document titles
+  if (Array.isArray(stationObj.documents)) {
+    stationObj.documents = stationObj.documents.map((doc) => ({
+      ...doc,
+      title: getField(doc.title),
+    }));
+  }
+
+  // Translate store name and description
+  if (Array.isArray(stationObj.stores)) {
+    stationObj.stores = stationObj.stores.map((store) => ({
+      ...store,
+      storeName: getField(store.storeName),
+      description: getField(store.description),
+    }));
+  }
+
+  // Translate main station fields
+  stationObj.stationName = getField(stationObj.stationName);
+  stationObj.stationAddress = getField(stationObj.stationAddress);
+
   return res.status(200).json({
     message: "Success",
-    result: {
-      ...station.toObject(),
-      stationName: getField(station.stationName),
-      stationAddress: getField(station.stationAddress),
-    },
+    result: stationObj,
   });
 });
 
