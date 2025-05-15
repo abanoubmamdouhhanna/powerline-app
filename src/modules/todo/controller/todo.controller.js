@@ -1,12 +1,15 @@
 import { nanoid } from "nanoid";
-import { uploadToCloudinary } from "../../../utils/cloudinaryHelpers.js"; // adjust import if needed
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from "../../../utils/cloudinaryHelpers.js"; // adjust import if needed
 import { asyncHandler } from "../../../utils/errorHandling.js";
 import toDoModel from "../../../../DB/models/ToDo.model.js";
 import { ApiFeatures } from "../../../utils/apiFeatures.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
+import cloudinary from "../../../utils/cloudinary.js";
 
-// //create task
-
+//create task
 export const createTask = asyncHandler(async (req, res, next) => {
   const {
     user,
@@ -265,3 +268,203 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
     result: translatedTasks,
   });
 });
+//====================================================================================================================//
+//update task
+export const updateTask = asyncHandler(async (req, res, next) => {
+  const { taskId } = req.params;
+  const { user, taskName, startDate, deadline, taskDetails, comment } =
+    req.body;
+
+  const task = await toDoModel.findById(taskId);
+  if (!task) {
+    return next(new Error("Task not found", { cause: 404 }));
+  }
+
+  // Validate required fields if provided
+  if (startDate && deadline && new Date(startDate) > new Date(deadline)) {
+    return next(
+      new Error("Start date must be before the deadline", { cause: 400 })
+    );
+  }
+
+  // Prepare updated fields
+  if (user) task.user = user;
+  if (taskName) task.taskName = await translateMultiLang(taskName);
+  if (startDate) task.startDate = startDate;
+  if (deadline) task.deadline = deadline;
+  if (taskDetails) task.taskDetails = await translateMultiLang(taskDetails);
+  if (comment) task.comment = await translateMultiLang(comment);
+
+  await task.save();
+
+  return res.status(200).json({
+    status: "success",
+    message: "Task updated successfully.",
+    task,
+  });
+});
+//====================================================================================================================//
+//delete task
+export const deleteTask = asyncHandler(async (req, res, next) => {
+  const { taskId } = req.params;
+  const task = await toDoModel.findById(taskId);
+  if (!task) {
+    return next(new Error("Task not found", { cause: 404 }));
+  }
+  if (task.createdBy.toString() !== req.user._id.toString()) {
+    return next(
+      new Error("You are not authorized to delete this task", { cause: 403 })
+    );
+  }
+  // 1. Delete task documents
+  const folderBase = `${process.env.APP_NAME}/Todo/${task.customId}`;
+  const fileInfos = task.documents.flatMap((doc) => doc.files);
+
+  // Combine all files to delete into a single array
+  const allFilesToDelete = [...fileInfos];
+  try {
+    // 2. Delete each file from Cloudinary
+
+    await Promise.all(
+      allFilesToDelete.map(({ public_id, resource_type }) =>
+        cloudinary.uploader.destroy(public_id, { resource_type })
+      )
+    );
+  } catch (error) {
+    console.log(error);
+    return next(new Error("Failed to delete task", { cause: 500 }));
+  }
+  try {
+    // 3. Delete the Cloudinary folder if it's empty
+    await deleteFromCloudinary(folderBase);
+  } catch (error) {
+    return next(
+      new Error(`Error deleting folder from Cloudinary: ${error.message}`, {
+        cause: 500,
+      })
+    );
+  }
+  try {
+    // 4. Delete the station document from the database
+    await toDoModel.findByIdAndDelete(taskId);
+  } catch (error) {
+    return next(
+      new Error(`Error deleting station from database: ${error.message}`, {
+        cause: 500,
+      })
+    );
+  }
+  return res.status(200).json({ message: "Task deleted successfully" });
+});
+//====================================================================================================================//
+//delete task document
+export const deleteTaskDocument = asyncHandler(async (req, res, next) => {
+  const { taskId, documentId } = req.body;
+  const task = await toDoModel.findById(taskId);
+  if (!task) {
+    return next(new Error("Task not found", { cause: 404 }));
+  }
+  const documentIndex = task.documents.findIndex(
+    (doc) => doc._id.toString() === documentId
+  );
+  if (documentIndex === -1) {
+    return next(new Error("Document not found", { cause: 404 }));
+  }
+  const [documentToDelete] = task.documents.splice(documentIndex, 1);
+  const files = documentToDelete.files;
+  if (!files.length) {
+    return next(
+      new Error("No files to delete in this document", { cause: 404 })
+    );
+  }
+  const firstFilePublicId = files[0].public_id;
+  const folderBase = firstFilePublicId.substring(
+    0,
+    firstFilePublicId.lastIndexOf("/")
+  );
+  // Delete all files from Cloudinary
+  try {
+    const deletePromises = files.map((file) =>
+      cloudinary.uploader.destroy(file.public_id, {
+        resource_type: file.resource_type || "raw",
+      })
+    );
+
+    const results = await Promise.allSettled(deletePromises);
+
+    results.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        console.log(`File ${files[index].public_id} deleted successfully.`);
+      } else {
+        console.error(
+          `Error deleting file ${files[index].public_id}:`,
+          result.reason
+        );
+      }
+    });
+
+    // Delete folder after all files are handled
+    try {
+      await deleteFromCloudinary(folderBase);
+      console.log(`Folder ${folderBase} deleted successfully.`);
+    } catch (folderErr) {
+      console.error(`Failed to delete folder ${folderBase}:`, folderErr);
+    }
+  } catch (err) {
+    console.error("Error while deleting files from Cloudinary:", err);
+    return next(
+      new Error("Error deleting files from Cloudinary", { cause: 500 })
+    );
+  }
+  await task.save();
+  return res
+    .status(200)
+    .json({ message: "Task document deleted successfully" });
+});
+//====================================================================================================================//
+//add task document
+export const addTaskDocument = asyncHandler(async (req, res, next) => {
+  const { taskId, title, start, end } = req.body;
+
+  if (!title || !start || !end || !req.files) {
+    return next(
+      new Error("Missing required fields or document files", { cause: 400 })
+    );
+  }
+  const task = await toDoModel.findById(taskId);
+  if (!task) {
+    return next(new Error("Task not found", { cause: 404 }));
+  }
+  const documentIndex = task.documents.length;
+  const folder = `${process.env.APP_NAME}/Todo/${task.customId}/documents/document_${documentIndex}`;
+
+  const uploadedFiles = await Promise.all(
+    Object.values(req.files)
+      .flat()
+      .map((file) =>
+        uploadToCloudinary(
+          file,
+          folder,
+          `${task.customId}_taskDoc_${documentIndex}_${file.originalname}`
+        )
+      )
+  );
+  const translatedTitle = await translateMultiLang(title);
+
+  const newDocument = {
+    title: translatedTitle,
+    start: new Date(start),
+    end: new Date(end),
+    files: uploadedFiles,
+  };
+
+  task.documents.push(newDocument);
+  await task.save();
+
+  return res.status(201).json({
+    status: "success",
+    message: "Task document added successfully.",
+    task,
+  });
+});
+
