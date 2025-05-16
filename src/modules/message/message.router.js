@@ -15,7 +15,7 @@ const router = Router();
 router.post(
   "/getMessages/:userId",
   isValid(headersSchema, true),
-  auth(["admin", "user"]),
+  auth(["employee"]),
   isValid(getMessagesSchema),
   messageController.getMessages
 );
@@ -23,8 +23,8 @@ router.post(
 //upload message file
 router.post(
   "/messageFile",
-  // isValid(headersSchema, true),
-  // auth(["admin", "user"]),
+  isValid(headersSchema, true),
+  auth(["employee"]),
   fileUpload(2, allowedTypesMap).single("messageFile"),
   isValid(messageFileSchema),
   messageController.uploadMessageFile

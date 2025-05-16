@@ -43,7 +43,7 @@ export const getUserGroups = asyncHandler(async (req, res, next) => {
     })
     .select("_id name members admin updatedAt") // Select only required fields
     .populate("admin","_id email name employeeId imageUrl") // Populate admin details
-    .populate("members", "email name employeeId imageUrl") // Populate members
+    .populate("members", "_id email name employeeId imageUrl") // Populate members
     .sort({ updatedAt: -1 });
 
   res.status(200).json({

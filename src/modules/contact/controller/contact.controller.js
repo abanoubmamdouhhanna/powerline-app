@@ -20,7 +20,7 @@ export const searchContacts = asyncHandler(async (req, res, next) => {
       $and: [
         { _id: { $ne: req.user._id } },
         {
-          $or: [{ name: regex },{ email: regex }],
+          $or: [{ name: regex }, { email: regex }],
         },
       ],
     })
@@ -75,7 +75,7 @@ export const getContactsFromDMList = asyncHandler(async (req, res, next) => {
       $addFields: {
         email: "$contactInfo.email",
         name: "$contactInfo.name",
-        profilePic: "$contactInfo.imageUrl",
+        avatar: "$contactInfo.imageUrl",
       },
     },
     // 7. Remove unnecessary nested object
@@ -97,14 +97,23 @@ export const getContactsFromDMList = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //get all contacts
 export const getAllContacts = asyncHandler(async (req, res, next) => {
+  const targetLang = req.language || "en";
+
   const users = await userModel.find(
     { _id: { $ne: req.user._id } },
-    "_id name email"
+    "_id name email imageUrl"
   );
 
+  const getField = (fieldObj) => {
+    if (typeof fieldObj === "object") {
+      return fieldObj[targetLang] || fieldObj.en || Object.values(fieldObj)[0];
+    }
+    return fieldObj;
+  };
+
   const contacts = users.map((user) => ({
-    lable: user.name ? user.name : user.email,
-    value: user._id,
+    name: user.name ? getField(user.name) : user.email,
+    avatar: user.imageUrl,
   }));
 
   res.status(200).json({

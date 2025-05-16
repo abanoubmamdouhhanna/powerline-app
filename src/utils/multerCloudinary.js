@@ -1,6 +1,12 @@
 import multer from "multer";
 import { asyncHandler } from "./errorHandling.js";
 import { dangerousExtensions } from "./dangerousExtensions.js";
+import fs from "fs";
+import path from "path";
+const uploadDir = "files";
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Define allowed MIME types by base field name
 export const allowedTypesMap = (() => {
@@ -29,11 +35,12 @@ export const allowedTypesMap = (() => {
     documentFiles: [...baseDocTypes, ...baseImageTypes],
     documents: [...baseDocTypes, ...baseImageTypes],
     leaseDoc: [...baseDocTypes, ...baseImageTypes],
-    supplierImage:baseImageTypes,
-    carImage:baseImageTypes,
-    specsImage:baseImageTypes,
-    safetyImage:baseImageTypes,
-    receiptImage:baseImageTypes
+    supplierImage: baseImageTypes,
+    carImage: baseImageTypes,
+    specsImage: baseImageTypes,
+    safetyImage: baseImageTypes,
+    receiptImage: baseImageTypes,
+    messageFile: [...baseDocTypes, ...baseImageTypes],
   };
 })();
 
@@ -86,7 +93,17 @@ const fileValidation = (allowedTypesMap = {}) => {
 
 // File upload config
 export function fileUpload(size, allowedTypesMap) {
-  const storage = multer.diskStorage({});
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueName = `${Date.now()}-${Math.round(
+        Math.random() * 1e9
+      )}${path.extname(file.originalname)}`;
+      cb(null, uniqueName);
+    },
+  });
   const limits = { fileSize: size * 1024 * 1024 }; // Size in MB
   const fileFilter = fileValidation(allowedTypesMap);
   return multer({ fileFilter, storage, limits });

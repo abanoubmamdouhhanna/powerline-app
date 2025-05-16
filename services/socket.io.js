@@ -74,7 +74,11 @@ const sendGroupMessage = async (message) => {
 
     // Update group messages list
     const group = await groupModel
-      .findByIdAndUpdate(groupId, { $push: { messages: createMessage._id } }, { new: true })
+      .findByIdAndUpdate(
+        groupId,
+        { $push: { messages: createMessage._id } },
+        { new: true }
+      )
       .populate("members", "_id")
       .populate("admin", "_id")
       .lean();
@@ -84,7 +88,8 @@ const sendGroupMessage = async (message) => {
     // Emit message to all group members
     [...group.members, group.admin].forEach((member) => {
       const memberSocketId = userSocketMap.get(member._id.toString());
-      if (memberSocketId) io.to(memberSocketId).emit("receiveGroupMessage", messageData);
+      if (memberSocketId)
+        io.to(memberSocketId).emit("receiveGroupMessage", messageData);
     });
   } catch (error) {
     console.error("Error sending group message:", error);
@@ -94,74 +99,74 @@ const sendGroupMessage = async (message) => {
 //====================================================================================================================//
 //Update Message Function (Allowed only within 15 min)
 const updateMessage = async ({ messageId, newContent }) => {
- try {
-   const message = await messageModel.findById(messageId);
-   if (!message) return;
+  try {
+    const message = await messageModel.findById(messageId);
+    if (!message) return;
 
-   const createdAt = new Date(message.createdAt);
-   const now = new Date();
-   const timeDiff = (now - createdAt) / (1000 * 60); // Difference in minutes
+    const createdAt = new Date(message.createdAt);
+    const now = new Date();
+    const timeDiff = (now - createdAt) / (1000 * 60); // Difference in minutes
 
-   if (timeDiff > 15) {
-     console.log("Update not allowed after 15 minutes.");
-     return;
-   }
+    if (timeDiff > 15) {
+      console.log("Update not allowed after 15 minutes.");
+      return;
+    }
 
-   // Update message in DB
-   const updatedMessage = await messageModel
-     .findByIdAndUpdate(
-       messageId,
-       { content: newContent },
-       { new: true } // Return the updated document
-     )
-     .populate("senderId", "_id email name")
-     .populate("receiverId", "_id email name")
-     .lean();
+    // Update message in DB
+    const updatedMessage = await messageModel
+      .findByIdAndUpdate(
+        messageId,
+        { content: newContent },
+        { new: true } // Return the updated document
+      )
+      .populate("senderId", "_id email name")
+      .populate("receiverId", "_id email name")
+      .lean();
 
-   if (!updatedMessage) return;
+    if (!updatedMessage) return;
 
-   const { senderId, receiverId } = updatedMessage;
-   const senderSocketId = userSocketMap.get(senderId._id);
-   const receiverSocketId = userSocketMap.get(receiverId._id);
+    const { senderId, receiverId } = updatedMessage;
+    const senderSocketId = userSocketMap.get(senderId._id);
+    const receiverSocketId = userSocketMap.get(receiverId._id);
 
-   // Emit updated message to sender and receiver if online
-   [senderSocketId, receiverSocketId].forEach((socketId) => {
-     if (socketId) io.to(socketId).emit("messageUpdated", updatedMessage);
-   });
- } catch (error) {
-   console.error("Error updating message:", error);
- }
+    // Emit updated message to sender and receiver if online
+    [senderSocketId, receiverSocketId].forEach((socketId) => {
+      if (socketId) io.to(socketId).emit("messageUpdated", updatedMessage);
+    });
+  } catch (error) {
+    console.error("Error updating message:", error);
+  }
 };
 //====================================================================================================================//
 //Delete Message Function (Allowed only within 15 min)
 const deleteMessage = async (messageId) => {
- try {
-   const message = await messageModel.findById(messageId);
-   if (!message) return;
+  try {
+    const message = await messageModel.findById(messageId);
+    if (!message) return;
 
-   const createdAt = new Date(message.createdAt);
-   const now = new Date();
-   const timeDiff = (now - createdAt) / (1000 * 60); // Difference in minutes
+    const createdAt = new Date(message.createdAt);
+    const now = new Date();
+    const timeDiff = (now - createdAt) / (1000 * 60); // Difference in minutes
 
-   if (timeDiff > 15) {
-     console.log("Delete not allowed after 15 minutes.");
-     return;
-   }
+    if (timeDiff > 15) {
+      console.log("Delete not allowed after 15 minutes.");
+      return;
+    }
 
-   const { senderId, receiverId } = message;
-   const senderSocketId = userSocketMap.get(senderId);
-   const receiverSocketId = userSocketMap.get(receiverId);
+    const { senderId, receiverId } = message;
+    const senderSocketId = userSocketMap.get(senderId);
+    const receiverSocketId = userSocketMap.get(receiverId);
 
-   // Delete message from DB
-   await messageModel.findByIdAndDelete(messageId);
+    // Delete message from DB
+    await messageModel.findByIdAndDelete(messageId);
 
-   // Emit deleted message ID to sender and receiver if online
-   [senderSocketId, receiverSocketId].forEach((socketId) => {
-     if (socketId) io.to(socketId).emit("messageDeleted", { messageId });
-   });
- } catch (error) {
-   console.error("Error deleting message:", error);
- }
+    // Emit deleted message ID to sender and receiver if online
+    [senderSocketId, receiverSocketId].forEach((socketId) => {
+      if (socketId) io.to(socketId).emit("messageDeleted", { messageId });
+    });
+  } catch (error) {
+    console.error("Error deleting message:", error);
+  }
 };
 
 //====================================================================================================================//

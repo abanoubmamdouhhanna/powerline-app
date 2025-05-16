@@ -13,7 +13,7 @@ const router = Router();
 router.post(
   "/searchContacts",
   isValid(headersSchema, true),
-  auth(["admin", "user"]),
+  auth(["employee"]),
   isValid(searchContactsSchema),
   contactController.searchContacts
 );
@@ -22,14 +22,14 @@ router.post(
 router.get(
   "/getContacts",
   isValid(headersSchema, true),
-  auth(["admin", "user"]),
+  auth(["employee"]),
   contactController.getContactsFromDMList
 );
 //get all contacts
 router.get(
   "/getAllContacts",
   isValid(headersSchema, true),
-  auth(["admin", "user"]),
+  auth(["employee"]),
   contactController.getAllContacts
 );
 
