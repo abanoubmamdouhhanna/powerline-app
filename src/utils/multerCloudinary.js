@@ -3,7 +3,13 @@ import { asyncHandler } from "./errorHandling.js";
 import { dangerousExtensions } from "./dangerousExtensions.js";
 import fs from "fs";
 import path from "path";
-const uploadDir = "files";
+
+// const uploadDir = "files";
+// if (!fs.existsSync(uploadDir)) {
+//   fs.mkdirSync(uploadDir, { recursive: true });
+// }
+
+const uploadDir = path.join("/tmp", "files");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
