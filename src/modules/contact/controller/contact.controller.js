@@ -36,17 +36,23 @@ export const searchContacts = asyncHandler(async (req, res, next) => {
 //get contacts
 export const getContactsFromDMList = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
+  const targetLang = req.language || "en";
+
+  const getField = (fieldObj) => {
+    if (typeof fieldObj === "object") {
+      return fieldObj[targetLang] || fieldObj.en || Object.values(fieldObj)[0];
+    }
+    return fieldObj;
+  };
 
   const contacts = await messageModel.aggregate([
-    // 1. Filter messages related to the user
     {
       $match: {
         $or: [{ senderId: userId }, { receiverId: userId }],
+        isDeleted: false,
       },
     },
-    // 2. Sort messages by timestamp (latest first)
-    { $sort: { timestamp: -1 } },
-    // 3. Group by contact ID (last message per contact)
+    { $sort: { createdAt: -1 } },
     {
       $group: {
         _id: {
@@ -56,10 +62,23 @@ export const getContactsFromDMList = asyncHandler(async (req, res, next) => {
             else: "$senderId",
           },
         },
-        lastMessageTime: { $first: "$timestamp" },
+        lastMessage: { $first: "$$ROOT" },
+        unreadCount: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  { $eq: ["$receiverId", userId] },
+                  { $eq: ["$isRead", false] },
+                ],
+              },
+              1,
+              0,
+            ],
+          },
+        },
       },
     },
-    // 4. Fetch contact details from the "users" collection
     {
       $lookup: {
         from: "users",
@@ -68,32 +87,43 @@ export const getContactsFromDMList = asyncHandler(async (req, res, next) => {
         as: "contactInfo",
       },
     },
-    // 5. Unwind contactInfo array
     { $unwind: "$contactInfo" },
-    // 6. Add user fields from contactInfo
-    {
-      $addFields: {
-        email: "$contactInfo.email",
-        name: "$contactInfo.name",
-        avatar: "$contactInfo.imageUrl",
-      },
-    },
-    // 7. Remove unnecessary nested object
     {
       $project: {
-        contactInfo: 0, // Removes redundant field
+        _id: "$contactInfo._id",
+        email: "$contactInfo.email",
+        name: "$contactInfo.name", // Keep full object, parse later
+        avatar: "$contactInfo.imageUrl",
+        lastMessage: {
+          content: "$lastMessage.content",
+          messageType: "$lastMessage.messageType",
+          fileUrl: "$lastMessage.fileUrl",
+          createdAt: {
+            $dateToString: {
+              format: "%H:%M",
+              date: "$lastMessage.createdAt",
+              timezone: "Asia/Riyadh",
+            },
+          },
+        },
       },
     },
-    // 8. Sort by lastMessageTime (latest first)
-    { $sort: { lastMessageTime: -1 } },
+    { $sort: { "lastMessage.createdAt": -1 } },
   ]);
+
+  // Apply language-specific name selection
+  const translatedContacts = contacts.map((contact) => ({
+    ...contact,
+    name: getField(contact.name),
+  }));
 
   res.status(200).json({
     status: "success",
     message: "Contacts retrieved successfully.",
-    contacts,
+    contacts: translatedContacts,
   });
 });
+
 //====================================================================================================================//
 //get all contacts
 export const getAllContacts = asyncHandler(async (req, res, next) => {

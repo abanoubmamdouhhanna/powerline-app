@@ -2,6 +2,7 @@ import messageModel from "../../../../DB/models/Message.model.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
 import { format, isToday, isYesterday } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 
 // 💬 **Get Messages Between Two Users**
 
@@ -42,40 +43,37 @@ export const getMessages = asyncHandler(async (req, res, next) => {
       }
 
       const createdAt = new Date(msg.createdAt);
-      let label;
-      
-      if (isToday(createdAt)) {
-        label = "Today";
-      } else if (isYesterday(createdAt)) {
-        label = "Yesterday";
-      } else {
-        label = format(createdAt, "M/d/yyyy");
-      }
+      const label = isToday(createdAt)
+      ? "Today"
+      : isYesterday(createdAt)
+      ? "Yesterday"
+      : format(createdAt, "M/d/yyyy");
+
 
       return {
         label,
         message: {
           ...msg,
-          content: translatedContent
+          content: translatedContent,
+          time: formatInTimeZone(createdAt, "Asia/Riyadh", "HH:mm")
         }
       };
     } catch (error) {
       console.error(`Failed to translate message ${msg._id}:`, error);
       // Return original message if translation fails
       const createdAt = new Date(msg.createdAt);
-      let label;
-      
-      if (isToday(createdAt)) {
-        label = "Today";
-      } else if (isYesterday(createdAt)) {
-        label = "Yesterday";
-      } else {
-        label = format(createdAt, "M/d/yyyy");
-      }
+      const label = isToday(createdAt)
+      ? "Today"
+      : isYesterday(createdAt)
+      ? "Yesterday"
+      : format(createdAt, "M/d/yyyy");
 
       return {
         label,
-        message: msg // original untranslated message
+        message: {
+          ...msg,
+          time: formatInTimeZone(createdAt, "Asia/Riyadh", "HH:mm")
+        }
       };
     }
   });
