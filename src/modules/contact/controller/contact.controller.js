@@ -4,31 +4,42 @@ import { asyncHandler } from "../../../utils/errorHandling.js";
 
 //search contacts
 export const searchContacts = asyncHandler(async (req, res, next) => {
-  const { searchTerm } = req.body;
+  const { searchTerm } = req.query;
+  const targetLanguage = req.headers.language || "en"; // default to English
+
   if (!searchTerm) {
     return next(new Error("SearchTerm is required", { cause: 400 }));
   }
-  const sanitilizedSearchTerm = searchTerm.replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&"
-  );
 
-  const regex = new RegExp(sanitilizedSearchTerm, "i");
+  const sanitizedSearchTerm = searchTerm
+    .trim()
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(sanitizedSearchTerm, "i");
 
   const contacts = await userModel
     .find({
-      $and: [
-        { _id: { $ne: req.user._id } },
-        {
-          $or: [{ name: regex }, { email: regex }],
-        },
+      _id: { $ne: req.user._id },
+      $or: [
+        { "name.en": regex },
+        { "name.ar": regex },
+        { "name.bn": regex },
+        { email: regex },
       ],
     })
     .lean();
+
+  // Map the contacts to return only the name in target language and imageUrl
+  const formattedContacts = contacts.map((contact) => ({
+    _id: contact._id,
+    name:
+      (contact.name && contact.name[targetLanguage]) || contact.name?.en || "",
+    avatar: contact.imageUrl || null,
+  }));
+
   return res.status(200).json({
     status: "success",
     message: "Searched contacts.",
-    contacts,
+    contacts: formattedContacts,
   });
 });
 

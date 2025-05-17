@@ -8,10 +8,9 @@ const getMessage = (key, lang = "en") => {
 
 export const headersSchema = (lang = "en") => generalFields(lang).headers;
 
-export const searchContactsSchema = joi
+export const searchContactsSchema = (lang = "en") => joi
   .object({
     searchTerm:joi.string().required()
-   
   })
   .required();
 
