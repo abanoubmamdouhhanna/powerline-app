@@ -1,11 +1,14 @@
 import messageModel from "../../../../DB/models/Message.model.js";
+import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
 import { format, isToday, isYesterday } from "date-fns";
 
 // 💬 **Get Messages Between Two Users**
+
 export const getMessages = asyncHandler(async (req, res, next) => {
   const userOne = req.user._id;
   const userTwo = req.params.userId;
+  const targetLang = req.language || "en"; // Get target language from request
 
   if (!userOne || !userTwo) {
     return next(
@@ -22,28 +25,70 @@ export const getMessages = asyncHandler(async (req, res, next) => {
       ],
     })
     .sort({ createdAt: 1 })
-    .select("_id senderId receiverId content messageType fileUrl createdAt");
+    .select("_id senderId receiverId content messageType fileUrl createdAt")
+    .lean();
 
-  // Group by date
+  // Translate messages and group by date
   const groupedMessages = {};
+  
+  // Process messages in parallel for better performance
+  const translationPromises = messages.map(async (msg) => {
+    try {
+      // Only translate text content (skip if messageType is file/media)
+      let translatedContent = msg.content;
+      if (msg.messageType === 'text' && msg.content) {
+        const { translatedText } = await translateAutoDetect(msg.content, targetLang);
+        translatedContent = translatedText;
+      }
 
-  messages.forEach((msg) => {
-    const createdAt = new Date(msg.createdAt);
+      const createdAt = new Date(msg.createdAt);
+      let label;
+      
+      if (isToday(createdAt)) {
+        label = "Today";
+      } else if (isYesterday(createdAt)) {
+        label = "Yesterday";
+      } else {
+        label = format(createdAt, "M/d/yyyy");
+      }
 
-    let label;
-    if (isToday(createdAt)) {
-      label = "Today";
-    } else if (isYesterday(createdAt)) {
-      label = "Yesterday";
-    } else {
-      label = format(createdAt, "M/d/yyyy"); // e.g., 5/15/2025
+      return {
+        label,
+        message: {
+          ...msg,
+          content: translatedContent
+        }
+      };
+    } catch (error) {
+      console.error(`Failed to translate message ${msg._id}:`, error);
+      // Return original message if translation fails
+      const createdAt = new Date(msg.createdAt);
+      let label;
+      
+      if (isToday(createdAt)) {
+        label = "Today";
+      } else if (isYesterday(createdAt)) {
+        label = "Yesterday";
+      } else {
+        label = format(createdAt, "M/d/yyyy");
+      }
+
+      return {
+        label,
+        message: msg // original untranslated message
+      };
     }
+  });
 
+  // Wait for all translations to complete
+  const translatedMessages = await Promise.all(translationPromises);
+
+  // Group the translated messages
+  translatedMessages.forEach(({ label, message }) => {
     if (!groupedMessages[label]) {
       groupedMessages[label] = [];
     }
-
-    groupedMessages[label].push(msg);
+    groupedMessages[label].push(message);
   });
 
   res.status(200).json({
@@ -52,7 +97,6 @@ export const getMessages = asyncHandler(async (req, res, next) => {
     result: groupedMessages,
   });
 });
-
 //====================================================================================================================//
 //upload message file
 export const uploadMessageFile = asyncHandler(async (req, res, next) => {
