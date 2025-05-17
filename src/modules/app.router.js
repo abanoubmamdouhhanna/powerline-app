@@ -31,8 +31,6 @@ const initApp = (app, express) => {
   app.use("/group", groupRouter);
   app.use("/todo", todoRouter);
   app.use("/supplier",supplierRouter);
-
-
  
   // Catch-all for undefined routes
   app.use((req, res, next) => {

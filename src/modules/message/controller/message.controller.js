@@ -20,7 +20,7 @@ export const getMessages = asyncHandler(async (req, res, next) => {
       ],
     })
     .sort({ createdAt: 1 }) // Fixes timestamps sorting issue
-    .select("_id senderId receiverId message contentType createdAt"); // Limits fields for better performance
+    .select("_id senderId receiverId content messageType fileUrl createdAt"); // Limits fields for better performance
 
   if (!messages.length) {
     return res.status(200).json({

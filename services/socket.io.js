@@ -26,23 +26,18 @@ export function getReceiverSocketIds(userId) {
 const sendMessage = async (message) => {
   try {
     const { senderId, receiverId } = message;
-    const senderSocketId = userSocketMap.get(senderId);
-    const receiverSocketId = userSocketMap.get(receiverId);
-
-    // Save message to DB
     const createMessage = await messageModel.create(message);
     const messageData = await messageModel
       .findById(createMessage._id)
-      .populate("senderId", "_id email name employeeId imageUrl")
-      .populate("receiverId", "_id email name employeeId imageUrl")
+      .populate("senderId", "_id email name imageUrl")
+      .populate("receiverId", "_id email name imageUrl")
       .lean();
 
     if (!messageData) return;
 
-    // Emit message to sender and receiver if online
-    [senderSocketId, receiverSocketId].forEach((socketId) => {
-      if (socketId) io.to(socketId).emit("receiveMessage", messageData);
-    });
+    // Emit to sender and receiver using emitToUser
+    emitToUser(senderId, "receiveMessage", messageData);
+    emitToUser(receiverId, "receiveMessage", messageData);
   } catch (error) {
     console.error("Error sending message:", error);
   }
@@ -52,7 +47,6 @@ const sendMessage = async (message) => {
 const sendGroupMessage = async (message) => {
   try {
     const { groupId, senderId, content, messageType, fileUrl } = message;
-
     const createMessage = await messageModel.create({
       senderId,
       receiverId: null,
@@ -69,10 +63,8 @@ const sendGroupMessage = async (message) => {
 
     if (!messageData) return;
 
-    // Attach group ID to message data
     messageData.groupId = groupId;
 
-    // Update group messages list
     const group = await groupModel
       .findByIdAndUpdate(
         groupId,
@@ -85,11 +77,9 @@ const sendGroupMessage = async (message) => {
 
     if (!group || !group.members) return;
 
-    // Emit message to all group members
+    // Emit to all group members using emitToUser
     [...group.members, group.admin].forEach((member) => {
-      const memberSocketId = userSocketMap.get(member._id.toString());
-      if (memberSocketId)
-        io.to(memberSocketId).emit("receiveGroupMessage", messageData);
+      emitToUser(member._id.toString(), "receiveGroupMessage", messageData);
     });
   } catch (error) {
     console.error("Error sending group message:", error);
@@ -105,34 +95,24 @@ const updateMessage = async ({ messageId, newContent }) => {
 
     const createdAt = new Date(message.createdAt);
     const now = new Date();
-    const timeDiff = (now - createdAt) / (1000 * 60); // Difference in minutes
+    const timeDiff = (now - createdAt) / (1000 * 60);
 
     if (timeDiff > 15) {
       console.log("Update not allowed after 15 minutes.");
       return;
     }
 
-    // Update message in DB
     const updatedMessage = await messageModel
-      .findByIdAndUpdate(
-        messageId,
-        { content: newContent },
-        { new: true } // Return the updated document
-      )
-      .populate("senderId", "_id email name")
-      .populate("receiverId", "_id email name")
+      .findByIdAndUpdate(messageId, { content: newContent }, { new: true })
+      .populate("senderId", "_id email name imageUrl")
+      .populate("receiverId", "_id email name imageUrl")
       .lean();
 
     if (!updatedMessage) return;
 
     const { senderId, receiverId } = updatedMessage;
-    const senderSocketId = userSocketMap.get(senderId._id);
-    const receiverSocketId = userSocketMap.get(receiverId._id);
-
-    // Emit updated message to sender and receiver if online
-    [senderSocketId, receiverSocketId].forEach((socketId) => {
-      if (socketId) io.to(socketId).emit("messageUpdated", updatedMessage);
-    });
+    emitToUser(senderId._id, "messageUpdated", updatedMessage);
+    emitToUser(receiverId._id, "messageUpdated", updatedMessage);
   } catch (error) {
     console.error("Error updating message:", error);
   }
@@ -146,7 +126,7 @@ const deleteMessage = async (messageId) => {
 
     const createdAt = new Date(message.createdAt);
     const now = new Date();
-    const timeDiff = (now - createdAt) / (1000 * 60); // Difference in minutes
+    const timeDiff = (now - createdAt) / (1000 * 60);
 
     if (timeDiff > 15) {
       console.log("Delete not allowed after 15 minutes.");
@@ -154,16 +134,10 @@ const deleteMessage = async (messageId) => {
     }
 
     const { senderId, receiverId } = message;
-    const senderSocketId = userSocketMap.get(senderId);
-    const receiverSocketId = userSocketMap.get(receiverId);
-
-    // Delete message from DB
     await messageModel.findByIdAndDelete(messageId);
 
-    // Emit deleted message ID to sender and receiver if online
-    [senderSocketId, receiverSocketId].forEach((socketId) => {
-      if (socketId) io.to(socketId).emit("messageDeleted", { messageId });
-    });
+    emitToUser(senderId, "messageDeleted", { messageId });
+    emitToUser(receiverId, "messageDeleted", { messageId });
   } catch (error) {
     console.error("Error deleting message:", error);
   }
@@ -215,5 +189,14 @@ io.on("connection", (socket) => {
     console.error(`Socket.IO Error: ${err.message}`);
   });
 });
+
+function emitToUser(userId, event, data) {
+  const socketIds = userSocketMap.get(userId);
+  if (socketIds) {
+    for (const socketId of socketIds) {
+      io.to(socketId).emit(event, data);
+    }
+  }
+}
 
 export { io, app, server };
