@@ -55,7 +55,8 @@ export const getMessages = asyncHandler(async (req, res, next) => {
         message: {
           ...msg,
           content: translatedContent,
-          time: formatInTimeZone(createdAt, "Asia/Riyadh", "HH:mm")
+          time: formatInTimeZone(createdAt, "Asia/Riyadh", "HH:mm"),
+          isSender: String(msg.senderId) === String(userOne),
         }
       };
     } catch (error) {
@@ -72,7 +73,8 @@ export const getMessages = asyncHandler(async (req, res, next) => {
         label,
         message: {
           ...msg,
-          time: formatInTimeZone(createdAt, "Asia/Riyadh", "HH:mm")
+          time: formatInTimeZone(createdAt, "Asia/Riyadh", "HH:mm"),
+          isSender: String(msg.senderId) === String(userOne),
         }
       };
     }
