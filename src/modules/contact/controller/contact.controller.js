@@ -153,6 +153,7 @@ export const getAllContacts = asyncHandler(async (req, res, next) => {
   };
 
   const contacts = users.map((user) => ({
+    _id: user._id,
     name: user.name ? getField(user.name) : user.email,
     avatar: user.imageUrl,
   }));
