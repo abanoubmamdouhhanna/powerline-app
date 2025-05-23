@@ -1,6 +1,7 @@
 import messageModel from "../../../../DB/models/Message.model.js";
 import userModel from "../../../../DB/models/User.model.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
+import groupModel from "../../../../DB/models/Group.model.js";
 
 //search contacts
 export const searchContacts = asyncHandler(async (req, res, next) => {
@@ -44,10 +45,14 @@ export const searchContacts = asyncHandler(async (req, res, next) => {
 });
 
 //====================================================================================================================//
-//get contacts
-export const getContactsFromDMList = asyncHandler(async (req, res, next) => {
-  const userId = req.user._id;
+//get all contacts
+export const getAllContacts = asyncHandler(async (req, res, next) => {
   const targetLang = req.language || "en";
+
+  const users = await userModel.find(
+    { _id: { $ne: req.user._id } },
+    "_id name email imageUrl"
+  );
 
   const getField = (fieldObj) => {
     if (typeof fieldObj === "object") {
@@ -56,7 +61,27 @@ export const getContactsFromDMList = asyncHandler(async (req, res, next) => {
     return fieldObj;
   };
 
-  const contacts = await messageModel.aggregate([
+  const contacts = users.map((user) => ({
+    _id: user._id,
+    name: user.name ? getField(user.name) : user.email,
+    avatar: user.imageUrl,
+  }));
+
+  res.status(200).json({
+    status: "success",
+    message: "Contacts retrieved successfully.",
+    contacts,
+  });
+});
+
+//====================================================================================================================//
+const getUserDMs = async (userId, targetLang) => {
+  const getField = (fieldObj) =>
+    typeof fieldObj === "object"
+      ? fieldObj[targetLang] || fieldObj.en || Object.values(fieldObj)[0]
+      : fieldObj;
+
+  const userDMs = await messageModel.aggregate([
     {
       $match: {
         $or: [{ senderId: userId }, { receiverId: userId }],
@@ -101,66 +126,87 @@ export const getContactsFromDMList = asyncHandler(async (req, res, next) => {
     { $unwind: "$contactInfo" },
     {
       $project: {
+        type: { $literal: "user" },
         _id: "$contactInfo._id",
         email: "$contactInfo.email",
-        name: "$contactInfo.name", // Keep full object, parse later
+        name: "$contactInfo.name",
         avatar: "$contactInfo.imageUrl",
         lastMessage: {
           content: "$lastMessage.content",
           messageType: "$lastMessage.messageType",
           fileUrl: "$lastMessage.fileUrl",
-          createdAt: {
-            $dateToString: {
-              format: "%H:%M",
-              date: "$lastMessage.createdAt",
-              timezone: "Asia/Riyadh",
-            },
-          },
+          createdAt: "$lastMessage.createdAt",
         },
       },
     },
-    { $sort: { "lastMessage.createdAt": -1 } },
   ]);
 
-  // Apply language-specific name selection
-  const translatedContacts = contacts.map((contact) => ({
-    ...contact,
-    name: getField(contact.name),
+  return userDMs.map((u) => ({
+    ...u,
+    name: getField(u.name),
   }));
+};
+//====================================================================================================================//
+const getGroupDMs = async (userId, targetLang) => {
+  const getField = (fieldObj) =>
+    typeof fieldObj === "object"
+      ? fieldObj[targetLang] || fieldObj.en || Object.values(fieldObj)[0]
+      : fieldObj;
 
-  res.status(200).json({
-    status: "success",
-    message: "Contacts retrieved successfully.",
-    contacts: translatedContacts,
-  });
-});
+  const groups = await groupModel
+    .find({
+      isDeleted: false,
+      $or: [{ admin: userId }, { members: userId }],
+    })
+    .populate({
+      path: "messages",
+      match: { isDeleted: false },
+      options: { sort: { createdAt: -1 }, limit: 1 },
+    })
+    .lean();
+
+  return groups.map((group) => ({
+    type: "group",
+    _id: group._id,
+    name: getField(group.name),
+    avatar: null, // You can add image support later
+    lastMessage: group.messages?.[0]
+      ? {
+          content: group.messages[0].content,
+          messageType: group.messages[0].messageType,
+          fileUrl: group.messages[0].fileUrl,
+          createdAt: group.messages[0].createdAt,
+        }
+      : null,
+  }));
+};
 
 //====================================================================================================================//
-//get all contacts
-export const getAllContacts = asyncHandler(async (req, res, next) => {
+//get dm list unified
+export const getDMListUnified = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
   const targetLang = req.language || "en";
 
-  const users = await userModel.find(
-    { _id: { $ne: req.user._id } },
-    "_id name email imageUrl"
-  );
+  const [userDMs, groupDMs] = await Promise.all([
+    getUserDMs(userId, targetLang),
+    getGroupDMs(userId, targetLang),
+  ]);
 
-  const getField = (fieldObj) => {
-    if (typeof fieldObj === "object") {
-      return fieldObj[targetLang] || fieldObj.en || Object.values(fieldObj)[0];
-    }
-    return fieldObj;
-  };
+  const combined = [...userDMs, ...groupDMs];
 
-  const contacts = users.map((user) => ({
-    _id: user._id,
-    name: user.name ? getField(user.name) : user.email,
-    avatar: user.imageUrl,
-  }));
+  combined.sort((a, b) => {
+    const dateA = a.lastMessage?.createdAt
+      ? new Date(a.lastMessage.createdAt)
+      : new Date(0);
+    const dateB = b.lastMessage?.createdAt
+      ? new Date(b.lastMessage.createdAt)
+      : new Date(0);
+    return dateB - dateA;
+  });
 
   res.status(200).json({
     status: "success",
-    message: "Contacts retrieved successfully.",
-    contacts,
+    message: "DM list retrieved successfully",
+    data: combined,
   });
 });

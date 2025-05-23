@@ -18,13 +18,6 @@ router.post(
   contactController.searchContacts
 );
 
-//get contacts
-router.get(
-  "/getContacts",
-  isValid(headersSchema, true),
-  auth(["employee"]),
-  contactController.getContactsFromDMList
-);
 //get all contacts
 router.get(
   "/getAllContacts",
@@ -33,4 +26,11 @@ router.get(
   contactController.getAllContacts
 );
 
+//get dm list unified
+router.get(
+  "/getDMListUnified",
+  isValid(headersSchema, true),
+  auth(["employee"]),
+  contactController.getDMListUnified
+);
 export default router;

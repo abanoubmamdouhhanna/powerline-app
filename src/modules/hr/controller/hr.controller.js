@@ -241,11 +241,13 @@ export const logIn = asyncHandler(async (req, res, next) => {
   if (loggedIn) {
     await user.save();
   }
+  const userData = user.toObject();
+  userData.name = userData.name[req.language] || userData.name.en;
   // Respond to client
   return res.status(200).json({
     message: getTranslation("Welcome! Logged in successfully", req.language),
     authorization: { token },
-    result: user,
+    result: userData,
   });
 });
 //====================================================================================================================//
