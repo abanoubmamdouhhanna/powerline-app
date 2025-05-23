@@ -12,7 +12,7 @@ import messageRouter from "./message/message.router.js"
 import groupRouter from "./group/group.router.js"
 import todoRouter from './todo/todo.router.js'
 import supplierRouter from './supplier/supplier.router.js'
-
+import storageRouter from "./storage/storage.router.js"
 const initApp = (app, express) => {
   // Built-in Middleware
   app.use(express.json());
@@ -31,6 +31,7 @@ const initApp = (app, express) => {
   app.use("/group", groupRouter);
   app.use("/todo", todoRouter);
   app.use("/supplier",supplierRouter);
+  app.use("/storage",storageRouter);
  
   // Catch-all for undefined routes
   app.use((req, res, next) => {

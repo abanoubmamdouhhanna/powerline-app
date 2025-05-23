@@ -47,6 +47,7 @@ export const allowedTypesMap = (() => {
     safetyImage: baseImageTypes,
     receiptImage: baseImageTypes,
     messageFile: [...baseDocTypes, ...baseImageTypes],
+    storageImage: baseImageTypes,
   };
 })();
 

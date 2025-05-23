@@ -2,6 +2,10 @@ import mongoose, { Schema, Types, model } from "mongoose";
 
 const storagesSchema = new Schema(
   {
+    customId: {
+      type: String,
+      required: true,
+    },
     station: {
       type: Types.ObjectId,
       ref: "Station",
