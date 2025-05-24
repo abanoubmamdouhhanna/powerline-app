@@ -272,16 +272,16 @@ export const logOut = asyncHandler(async (req, res, next) => {
 //update employee
 export const updateEmployee = asyncHandler(async (req, res, next) => {
   const { employeeId } = req.params;
+  const language = req.language || 'en'; // Default to English if language not specified
 
   const existingEmployee = await userModel.findById(employeeId);
   if (!existingEmployee) {
-    return next(new Error("Employee not found", { cause: 404 }));
+    return next(new Error(getTranslation("Employee not found", language), { cause: 404 }));
   }
 
   const {
     name,
     email,
-    password,
     phone,
     age,
     dateOfBirth,
@@ -314,9 +314,9 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
   ]);
 
   if (existingEmail)
-    return next(new Error("Email already exists", { cause: 409 }));
+    return next(new Error(getTranslation("Email already exists", language), { cause: 409 }));
   if (existingPhone)
-    return next(new Error("Phone number already exists", { cause: 409 }));
+    return next(new Error(getTranslation("Phone number already exists", language), { cause: 409 }));
 
   // Translate name and address if provided
   const translatedName = name
@@ -325,22 +325,18 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
   const translatedAddress = address
     ? await translateMultiLang(address)
     : undefined;
-
   const translatedNationality = nationality
     ? await translateMultiLang(nationality)
     : undefined;
-
-  const translatedCity = city ? await translateMultiLang(city) : undefined;
+  const translatedCity = city 
+    ? await translateMultiLang(city)
+    : undefined;
 
   // Update profile pic if provided
   const profilePicFile = uploadedFiles?.profilePic?.[0];
   if (profilePicFile) {
     const profilePicFolder = `${process.env.APP_NAME}/Users/${existingEmployee.customId}/profilePic`;
-
-    // Delete old profile picture if exists
     await deleteFromCloudinary(profilePicFolder);
-
-    // Upload new profile pic
     existingEmployee.imageUrl = await uploadToCloudinary(
       profilePicFile,
       profilePicFolder,
@@ -348,7 +344,7 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Handle translation for updated fields
+  // Update employee fields
   const updatedFields = {
     name: translatedName || existingEmployee.name,
     email: email || existingEmployee.email,
@@ -368,24 +364,63 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
     timeWork: timeWork || existingEmployee.timeWork,
     joiningDate: joiningDate || existingEmployee.joiningDate,
     contractDuration: contractDuration || existingEmployee.contractDuration,
-    residenceExpiryDate:
-      residenceExpiryDate || existingEmployee.residenceExpiryDate,
+    residenceExpiryDate: residenceExpiryDate || existingEmployee.residenceExpiryDate,
   };
 
-  // Apply updated fields to the existing employee
   Object.entries(updatedFields).forEach(([key, value]) => {
     existingEmployee[key] = value;
   });
 
-  // Save updated employee
   await existingEmployee.save();
 
+  // Format the response according to the requested language
+  const formattedResponse = {
+    _id: existingEmployee._id,
+    customId: existingEmployee.customId,
+    name: existingEmployee.name?.[language],
+    email: existingEmployee.email,
+    phone: existingEmployee.phone,
+    age: existingEmployee.age,
+    dateOfBirth: existingEmployee.dateOfBirth,
+    gender: existingEmployee.gender,
+    nationality: existingEmployee.nationality?.[language],
+    address: existingEmployee.address?.[language],
+    city: existingEmployee.city?.[language],
+    imageUrl: existingEmployee.imageUrl,
+    nationalId: existingEmployee.nationalId,
+    swiftCode: existingEmployee.swiftCode,
+    IBAN: existingEmployee.IBAN,
+    workFor: existingEmployee.workFor,
+    station: existingEmployee.station,
+    salary: existingEmployee.salary,
+    timeWork: existingEmployee.timeWork,
+    joiningDate: existingEmployee.joiningDate,
+    contractDuration: existingEmployee.contractDuration,
+    residenceExpiryDate: existingEmployee.residenceExpiryDate,
+    documents: existingEmployee.documents?.map(doc => ({
+      title: doc.title?.[language],
+      files: doc.files,
+      start: doc.start,
+      end: doc.end,
+      _id: doc._id
+    })),
+    role: existingEmployee.role,
+    permissions: existingEmployee.permissions,
+    status: existingEmployee.status,
+    availability: existingEmployee.availability,
+    isActive: existingEmployee.isActive,
+    isDeleted: existingEmployee.isDeleted,
+    createdAt: existingEmployee.createdAt,
+    updatedAt: existingEmployee.updatedAt,
+    employeeCode: existingEmployee.employeeCode
+  };
+
   return res.status(200).json({
-    message: getTranslation("Employee updated successfully", req.language),
-    result: existingEmployee,
+    status: "success",
+    message: getTranslation("Employee updated successfully", language),
+    result: formattedResponse,
   });
 });
-
 //====================================================================================================================//
 // Delete employee
 export const deleteEmployee = asyncHandler(async (req, res, next) => {

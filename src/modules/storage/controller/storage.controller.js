@@ -102,36 +102,68 @@ export const getStorageById = asyncHandler(async (req, res, next) => {
 //update storage
 export const updateStorage = asyncHandler(async (req, res, next) => {
   const { storageId } = req.params;
+  const language = req.language || 'en'; // Default to English if language not specified
   const { storageName, description, station, remainingNo } = req.body;
+
   const storage = await storagesModel.findById(storageId);
   if (!storage) {
     return next(new Error("Storage not found", { cause: 404 }));
   }
+
+  // Handle image upload if file is provided
   const storageImage = req.file
     ? await uploadImageCloudinary(
         req.file,
         `${process.env.APP_NAME}/Storages/${storage.customId}/storageImage`,
         `${storage.customId}_storageImage`
       )
-    : null;
+    : storage.storageImage; // Keep existing image if no new file provided
+
+  // Translate fields if provided
   const translatedStorageName = storageName
     ? await translateMultiLang(storageName)
     : undefined;
   const translatedDescription = description
     ? await translateMultiLang(description)
     : undefined;
-  const updatedStorage = await storagesModel.findByIdAndUpdate(storageId, {
-    storageName: translatedStorageName,
-    description: translatedDescription,
-    station,
-    remainingNo,
-    storageImage,
-  },{new:true});
+
+  // Update storage
+  const updatedStorage = await storagesModel.findByIdAndUpdate(
+    storageId,
+    {
+      storageName: translatedStorageName || storage.storageName,
+      description: translatedDescription || storage.description,
+      station: station || storage.station,
+      remainingNo: remainingNo !== undefined ? remainingNo : storage.remainingNo,
+      storageImage
+    },
+    { new: true }
+  ).populate({
+    path: "station",
+    select: `stationName.${language} customId` // Only populate station name in requested language
+  });
+
+  // Format the response according to the requested language
+  const formattedResponse = {
+    _id: updatedStorage._id,
+    customId: updatedStorage.customId,
+    storageName: updatedStorage.storageName?.[language],
+    description: updatedStorage.description?.[language],
+    station: {
+      _id: updatedStorage.station?._id,
+      customId: updatedStorage.station?.customId,
+      stationName: updatedStorage.station?.stationName?.[language]
+    },
+    remainingNo: updatedStorage.remainingNo,
+    storageImage: updatedStorage.storageImage,
+    createdAt: updatedStorage.createdAt,
+    updatedAt: updatedStorage.updatedAt
+  };
 
   res.status(200).json({
     status: "success",
     message: "Storage updated successfully",
-    result: updatedStorage,
+    result: formattedResponse,
   });
 });
 //====================================================================================================================//

@@ -77,6 +77,8 @@ export const addSupplier = asyncHandler(async (req, res, next) => {
 //update supplier
 export const updateSupplier = asyncHandler(async (req, res, next) => {
   const { supplierId } = req.params;
+  const language = req.language || 'en'; // Default to English if language not specified
+  
   const {
     supplierName,
     phone,
@@ -88,7 +90,7 @@ export const updateSupplier = asyncHandler(async (req, res, next) => {
 
   const supplier = await supplierModel.findById(supplierId);
   if (!supplier) {
-    return next(new Error("Supplier not found", { cause: 404 }));
+    return next(new Error(getTranslation("Supplier not found", language), { cause: 404 }));
   }
 
   const updates = {};
@@ -114,8 +116,8 @@ export const updateSupplier = asyncHandler(async (req, res, next) => {
   if (swiftCode) updates.swiftCode = swiftCode;
   if (IBAN) updates.IBAN = IBAN;
 
-  const folder = `${process.env.APP_NAME}/Suppliers/${supplier.customId}/supplierImage`;
   // Handle image upload if file is sent
+  const folder = `${process.env.APP_NAME}/Suppliers/${supplier.customId}/supplierImage`;
   const imageUploadPromise = req.file
     ? uploadImageCloudinary(
         req.file,
@@ -125,7 +127,6 @@ export const updateSupplier = asyncHandler(async (req, res, next) => {
     : Promise.resolve(null);
 
   const uploadResult = await imageUploadPromise;
-
   updates.supplierImage = uploadResult || supplier.supplierImage;
 
   // Apply updates
@@ -135,10 +136,26 @@ export const updateSupplier = asyncHandler(async (req, res, next) => {
     { new: true }
   );
 
+  // Format the response according to the requested language
+  const formattedResponse = {
+    _id: updatedSupplier._id,
+    customId: updatedSupplier.customId,
+    supplierName: updatedSupplier.supplierName?.[language],
+    supplierAddress: updatedSupplier.supplierAddress?.[language],
+    phone: updatedSupplier.phone,
+    supplierImage: updatedSupplier.supplierImage,
+    supplierWhatsAppLink: updatedSupplier.supplierWhatsAppLink,
+    swiftCode: updatedSupplier.swiftCode,
+    IBAN: updatedSupplier.IBAN,
+    station: updatedSupplier.station,
+    createdAt: updatedSupplier.createdAt,
+    updatedAt: updatedSupplier.updatedAt
+  };
+
   return res.status(200).json({
     status: "success",
     message: "Supplier updated successfully",
-    supplier: updatedSupplier,
+    result: formattedResponse,
   });
 });
 //====================================================================================================================//

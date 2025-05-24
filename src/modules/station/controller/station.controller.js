@@ -412,7 +412,7 @@ export const getSpStation = asyncHandler(async (req, res, next) => {
 //update station
 export const updateStation = asyncHandler(async (req, res, next) => {
   const { stationId } = req.params;
-
+  const language = req.language || 'en'; // Default to English if language not specified
   const {
     stationName,
     stationAddress,
@@ -455,10 +455,24 @@ export const updateStation = asyncHandler(async (req, res, next) => {
   if (!updatedStation) {
     return next(new Error("Station not found", { cause: 404 }));
   }
-
+  const formattedResponse = {
+    _id: updatedStation._id,
+    customId: updatedStation.customId,
+    stationName: updatedStation.stationName?.[language],
+    stationAddress: updatedStation.stationAddress?.[language],
+    noOfPumps: updatedStation.noOfPumps,
+    noOfPistol: updatedStation.noOfPistol,
+    supplier: updatedStation.supplier,
+    noOfGreenPistol: updatedStation.noOfGreenPistol,
+    noOfRedPistol: updatedStation.noOfRedPistol,
+    noOfDieselPistol: updatedStation.noOfDieselPistol,
+    isDeleted: updatedStation.isDeleted,
+    createdAt: updatedStation.createdAt,
+    updatedAt: updatedStation.updatedAt
+  };
   return res.status(200).json({
     message: "Station updated successfully",
-    result: updatedStation,
+    result: formattedResponse,
   });
 });
 
