@@ -7,12 +7,24 @@ const router = Router();
 router.get("/taskstats", auth(["employee"]), statisticsController.taskstats);
 
 //employees statistics
-router.get("/employeeStats", auth(["employee"]), statisticsController.employeeStats);
+router.get(
+  "/employeeStats",
+  auth(["employee"]),
+  statisticsController.employeeStats
+);
 
 //stations statistics
-router.get("/stationsStats", auth(["employee"]), statisticsController.stationsStats);
+router.get(
+  "/stationsStats",
+  auth(["employee"]),
+  statisticsController.stationsStats
+);
 
 //get Station Full Stats
-router.get("/getStationFullStats", auth(["employee"]), statisticsController.getStationFullStats);
+router.get(
+  "/getStationFullStats",
+  auth(["employee"]),
+  statisticsController.getStationFullStats
+);
 
 export default router;

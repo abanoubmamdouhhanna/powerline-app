@@ -14,6 +14,8 @@ import todoRouter from './todo/todo.router.js'
 import supplierRouter from './supplier/supplier.router.js'
 import storageRouter from "./storage/storage.router.js"
 import statisticsRouter from "./statistics/statistics.router.js"
+import permissionRouter from "./permissions/permission.router.js"
+
 
 const initApp = (app, express) => {
   // Built-in Middleware
@@ -35,7 +37,7 @@ const initApp = (app, express) => {
   app.use("/supplier",supplierRouter);
   app.use("/storage",storageRouter);
   app.use("/statistics",statisticsRouter);
-
+  app.use("/permission",permissionRouter)
 
  
   // Catch-all for undefined routes
