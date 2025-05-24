@@ -14,6 +14,7 @@ import {
 } from "../../../utils/cloudinaryHelpers.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
+import gasolineModel from "../../../../DB/models/GasolinePrice.model.js";
 
 // add gasoline type
 export const addGasoline = asyncHandler(async (req, res, next) => {
@@ -412,7 +413,7 @@ export const getSpStation = asyncHandler(async (req, res, next) => {
 //update station
 export const updateStation = asyncHandler(async (req, res, next) => {
   const { stationId } = req.params;
-  const language = req.language || 'en'; // Default to English if language not specified
+  const language = req.language || "en"; // Default to English if language not specified
   const {
     stationName,
     stationAddress,
@@ -468,7 +469,7 @@ export const updateStation = asyncHandler(async (req, res, next) => {
     noOfDieselPistol: updatedStation.noOfDieselPistol,
     isDeleted: updatedStation.isDeleted,
     createdAt: updatedStation.createdAt,
-    updatedAt: updatedStation.updatedAt
+    updatedAt: updatedStation.updatedAt,
   };
   return res.status(200).json({
     message: "Station updated successfully",
@@ -816,5 +817,145 @@ export const addStationStore = asyncHandler(async (req, res, next) => {
   return res.status(201).json({
     message: "Store added successfully",
     store: station.stores.at(-1),
+  });
+});
+//====================================================================================================================//
+//add gasoline price
+export const addGasolinePrice = asyncHandler(async (req, res, next) => {
+  const { station, redPrice, greenPrice, dieselPrice } = req.body;
+
+  // Validate required fields
+  if (!station || !redPrice || !greenPrice || !dieselPrice) {
+    return next(
+      new Error("All fields are required", {
+        cause: 400,
+      })
+    );
+  }
+
+  // Check if station exists
+  const stationExists = await stationModel.exists({ _id: station });
+  if (!stationExists) {
+    return next(new Error("Station not found.", { cause: 404 }));
+  }
+
+  // Check if price already exists for this station and gasoline type
+  const existingPrice = await gasolineModel.findOne({
+    station,
+  });
+
+  if (existingPrice) {
+    return next(
+      new Error(
+        "A price already exists for this station and gasoline type combination. Use update instead.",
+        {
+          cause: 400,
+        }
+      )
+    );
+  }
+
+  // Create new price if no existing record found
+  const newPrice = await gasolineModel.create({
+    station,
+    redPrice,
+    greenPrice,
+    dieselPrice,
+  });
+
+  return res.status(201).json({
+    message: "Gasoline price added successfully",
+    result: newPrice,
+  });
+});
+//====================================================================================================================//
+//update gasoline prices
+export const updateGasolinePrice = asyncHandler(async (req, res, next) => {
+  const { priceId } = req.params;
+  const { redPrice, greenPrice, dieselPrice } = req.body;
+  const language = req.language || "en";
+
+  // Update the price and populate related data
+  const updatedPrice = await gasolineModel
+    .findByIdAndUpdate(
+      priceId,
+      { redPrice, greenPrice, dieselPrice },
+      { new: true }
+    )
+    .populate([
+      {
+        path: "station",
+        select: "stationName customId",
+        model: "Station",
+      },
+    ]);
+
+  if (!updatedPrice) {
+    return next(
+      new Error("Gasoline price not found", {
+        cause: 404,
+      })
+    );
+  }
+
+  // Format the response with language-specific fields
+  const formattedResponse = {
+    _id: updatedPrice._id,
+    redPrice: updatedPrice.redPrice,
+    greenPrice: updatedPrice.greenPrice,
+    dieselPrice: updatedPrice.dieselPrice,
+    station:
+      updatedPrice.station.stationName?.[language] ||
+      updatedPrice.station.stationName?.en ||
+      Object.values(updatedPrice.station.stationName)[0],
+    createdAt: updatedPrice.createdAt,
+    updatedAt: updatedPrice.updatedAt,
+  };
+
+  return res.status(200).json({
+    status: "success",
+    message: "Price updated successfully",
+    result: formattedResponse,
+  });
+});
+//====================================================================================================================//
+//get gasoline prices
+export const getGasolinePrices = asyncHandler(async (req, res, next) => {
+  const { stationId } = req.params;
+  const targetLang = req.language || "en";
+
+  const gasolinePrices = await gasolineModel
+    .find({ station: stationId })
+    .populate([
+      {
+        path: "station",
+        select: "stationName",
+        model: "Station",
+      },
+    ]);
+
+  if (!gasolinePrices || gasolinePrices.length === 0) {
+    return next(
+      new Error("No gasoline prices found for this station", { cause: 404 })
+    );
+  }
+
+  const translatedPrices = gasolinePrices.map((price) => ({
+    _id: price._id,
+    station:
+      price.station.stationName?.[targetLang] ||
+      price.station.stationName?.en ||
+      Object.values(price.station.stationName)[0],
+    redPrice: price.redPrice,
+    greenPrice: price.greenPrice,
+    dieselPrice: price.dieselPrice,
+    createdAt: price.createdAt,
+    updatedAt: price.updatedAt,
+  }));
+
+  return res.status(200).json({
+    status: "success",
+    message: "Gasoline prices retrieved successfully",
+    result: translatedPrices,
   });
 });
