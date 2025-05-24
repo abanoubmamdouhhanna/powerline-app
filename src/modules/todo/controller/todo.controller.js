@@ -11,6 +11,7 @@ import cloudinary from "../../../utils/cloudinary.js";
 
 //create task
 export const createTask = asyncHandler(async (req, res, next) => {
+  const language = req.language || 'en';
   const {
     user,
     taskName,
@@ -21,10 +22,10 @@ export const createTask = asyncHandler(async (req, res, next) => {
     documents: documentsData = [],
   } = req.body;
 
-  // Basic validation
+  // Basic validation with translated messages
   if (!taskName || !startDate || !deadline) {
     return next(
-      new Error("Task name, start date, and deadline are required", {
+      new Error("Task name, start date, and deadline are required",{
         cause: 400,
       })
     );
@@ -32,7 +33,9 @@ export const createTask = asyncHandler(async (req, res, next) => {
 
   if (new Date(startDate) > new Date(deadline)) {
     return next(
-      new Error("Start date must be before the deadline", { cause: 400 })
+      new Error("Start date must be before the deadline",{ 
+        cause: 400 
+      })
     );
   }
 
@@ -40,45 +43,57 @@ export const createTask = asyncHandler(async (req, res, next) => {
   const uploadedFiles = req.files || {};
 
   // Translate fields
-  const translatedTaskName = await translateMultiLang(taskName);
-  const translatedTaskDetails = taskDetails
-    ? await translateMultiLang(taskDetails)
-    : undefined;
-  const translatedComment = comment
-    ? await translateMultiLang(comment)
-    : undefined;
+  const [translatedTaskName, translatedTaskDetails, translatedComment] = await Promise.all([
+    translateMultiLang(taskName),
+    taskDetails ? translateMultiLang(taskDetails) : Promise.resolve(undefined),
+    comment ? translateMultiLang(comment) : Promise.resolve(undefined)
+  ]);
 
-  // Process documents
-  const processedDocuments = Array.isArray(documentsData)
-    ? await Promise.all(
-        documentsData.map(async (doc, i) => {
-          const { title } = doc;
+  // Process documents with error handling
+  let processedDocuments = [];
+  try {
+    processedDocuments = Array.isArray(documentsData)
+      ? await Promise.all(
+          documentsData.map(async (doc, i) => {
+            const { title } = doc;
 
-          if (!title) {
-            throw new Error("Each document must have a title");
-          }
+            if (!title) {
+              throw new Error("Each document must have a title");
+            }
 
-          const translatedTitle = await translateMultiLang(title);
-          const files = uploadedFiles[`documentFiles_${i}`] || [];
-          const folder = `${process.env.APP_NAME}/Todo/${customId}/documents/document_${i}`;
+            const [translatedTitle] = await Promise.all([
+              translateMultiLang(title),
+            ]);
 
-          const fileUploads = await Promise.all(
-            files.map((file) =>
-              uploadToCloudinary(
-                file,
-                folder,
-                `${customId}_document_${i}_${file.originalname}`
+            const files = uploadedFiles[`documentFiles_${i}`] || [];
+            const folder = `${process.env.APP_NAME}/Todo/${customId}/documents/document_${i}`;
+
+            const fileUploads = await Promise.all(
+              files.map((file) =>
+                uploadToCloudinary(
+                  file,
+                  folder,
+                  `${customId}_document_${i}_${file.originalname}`
+                )
               )
-            )
-          );
+            );
 
-          return {
-            title: translatedTitle,
-            files: fileUploads,
-          };
-        })
-      )
-    : [];
+            return {
+              title: translatedTitle,
+              files: fileUploads.map(file => ({
+                secure_url: file.secure_url,
+                public_id: file.public_id,
+                resource_type: file.resource_type
+              })),
+            };
+          })
+        )
+      : [];
+  } catch (error) {
+    return next(new Error("Error processing documents",{ 
+      cause: 500 
+    }));
+  }
 
   const newTask = await toDoModel.create({
     user,
@@ -92,10 +107,31 @@ export const createTask = asyncHandler(async (req, res, next) => {
     documents: processedDocuments,
   });
 
+  // Format the response with language-specific fields
+  const formattedTask = {
+    _id: newTask._id,
+    customId: newTask.customId,
+    taskName: newTask.taskName[language] || newTask.taskName.en || Object.values(newTask.taskName)[0],
+    startDate: newTask.startDate,
+    deadline: newTask.deadline,
+    taskDetails: newTask.taskDetails?.[language] || newTask.taskDetails?.en || newTask.taskDetails,
+    comment: newTask.comment?.[language] || newTask.comment?.en || newTask.comment,
+    status: newTask.status,
+    user: newTask.user,
+    createdBy: newTask.createdBy,
+    documents: newTask.documents.map(doc => ({
+      title: doc.title[language] || doc.title.en || Object.values(doc.title)[0],
+      files: doc.files,
+      _id: doc._id
+    })),
+    createdAt: newTask.createdAt,
+    updatedAt: newTask.updatedAt
+  };
+
   return res.status(201).json({
     status: "success",
-    message: "Task created successfully.",
-    task: newTask,
+    message: "Task created successfully",
+    result: formattedTask,
   });
 });
 

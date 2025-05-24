@@ -217,6 +217,7 @@ export const logIn = asyncHandler(async (req, res, next) => {
       email: user.email,
       role: user.role,
       employeeCode: user.employeeCode,
+      station: user.station,
     },
     expiresIn: tokenExpiry,
   });

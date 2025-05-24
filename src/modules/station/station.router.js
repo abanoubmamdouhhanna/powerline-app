@@ -99,16 +99,25 @@ router.post(
 );
 
 //add gasoline price
-router.post("/addGasolinePrice",auth(["employee"]),
-stationController.addGasolinePrice);
+router.post(
+  "/addGasolinePrice",
+  auth(["employee"]),
+  stationController.addGasolinePrice
+);
 
 //update gasoline prices
-router.patch("/updateGasolinePrice/:priceId",auth(["employee"]),
-stationController.updateGasolinePrice);
+router.patch(
+  "/updateGasolinePrice/:priceId",
+  auth(["employee"]),
+  stationController.updateGasolinePrice
+);
 
 //get gasoline prices
-router.get("/getGasolinePrices/:stationId",auth(["employee"]),
-stationController.getGasolinePrices);
+router.get(
+  "/getGasolinePrices/:stationId",
+  auth(["employee"]),
+  stationController.getGasolinePrices
+);
 
 
 export default router;
