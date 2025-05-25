@@ -30,7 +30,7 @@ router.get(
 router.get(
   "/getDMListUnified",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  // auth(["employee"]),
   contactController.getDMListUnified
 );
 export default router;

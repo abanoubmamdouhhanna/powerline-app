@@ -22,6 +22,10 @@ const attendanceSchema = new Schema(
     checkOut: {
       type: String,
     },
+    checked: {
+      type: Boolean,
+      default: false,
+    },
     workingHours: {
       type: String,
       default: "00:00 Hrs",

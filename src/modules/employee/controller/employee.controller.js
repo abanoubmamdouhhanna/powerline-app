@@ -27,6 +27,7 @@ export const checkIn = asyncHandler(async (req, res, next) => {
     station: user.station,
     date: dateOnly,
     checkIn,
+    checked:true,
     checkInLocation: location,
   });
 
@@ -55,6 +56,7 @@ export const checkOut = asyncHandler(async (req, res, next) => {
 
   attendance.checkOut = checkOut;
   attendance.checkOutLocation = location;
+  attendance.checked=false,
 
   await attendance.save(); // triggers workingHours calculation
 
