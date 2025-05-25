@@ -9,7 +9,7 @@ const router = Router();
 //cleaning task
 router.post(
   "/cleaningJobTask",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   fileUpload(5, allowedTypesMap).fields([
     { name: "cleaningImages", maxCount: 10 },
@@ -21,7 +21,7 @@ router.post(
 //inventory task
 router.post(
   "/inventoryJobTask",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   fileUpload(5, allowedTypesMap).fields([
     { name: "inventoryImages", maxCount: 10 },

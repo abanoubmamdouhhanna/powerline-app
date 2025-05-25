@@ -9,7 +9,7 @@ const router = Router();
 //add supplier
 router.post(
   "/addSupplier",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   fileUpload(5, allowedTypesMap).single("supplierImage"),
   supplierController.addSupplier
@@ -18,7 +18,7 @@ router.post(
 //update supplier
 router.patch(
   "/updateSupplier/:supplierId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   fileUpload(5, allowedTypesMap).single("supplierImage"),
   supplierController.updateSupplier
@@ -27,7 +27,7 @@ router.patch(
 //get all suppliers
 router.get(
   "/getAllSuppliers",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.getAllSuppliers
 );
@@ -35,7 +35,7 @@ router.get(
 //get sp supplier
 router.get(
   "/getSpSupplier/:supplierId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.getSpSupplier
 );
@@ -43,7 +43,7 @@ router.get(
 //delete supplier
 router.delete(
   "/deleteSupplier/:supplierId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.deleteSupplier
 );
@@ -51,7 +51,7 @@ router.delete(
 //create supplier request
 router.post(
   "/supplierRequest",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.supplierRequest
 );
@@ -62,28 +62,28 @@ router.get("/getALLSupplierReq", supplierController.getALLSupplierReq);
 //get sp supplier request
 router.get(
   "/getSpReq/:reqId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.getSpReq
 );
 //send to supplier
 router.post(
   "/sendToSupplier",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.sendToSupplier
 );
 //send to station maneger
 router.post(
   "/sendToStation",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.sendToStation
 );
 //get all station supplier requests
 router.get(
   "/getStaSupplierReq",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.getStaSupplierReq
 );
@@ -91,7 +91,7 @@ router.get(
 //review request
 router.post(
   "/reviewRequest",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   fileUpload(10, allowedTypesMap).fields([
     { name: "carImage", maxCount: 1 },
@@ -105,14 +105,14 @@ router.post(
 //complete request
 router.patch(
   "/completeReq/:reqId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.completeReq
 );
 //delete supplier request
 router.delete(
   "/deleteReq/:reqId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   supplierController.deleteReq
 );

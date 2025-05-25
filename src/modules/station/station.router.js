@@ -10,7 +10,7 @@ const router = Router();
 // add gasoline type
 router.post(
   "/addGasoline",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   stationController.addGasoline
 );
@@ -18,7 +18,7 @@ router.post(
 // add pump
 router.post(
   "/addPump",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   stationController.addPump
 );
@@ -28,7 +28,7 @@ router.get("/getPumps/:stationId", stationController.getPumps);
 //get gasoline pump types
 router.get(
   "/getPumpTypes",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   stationController.getPumpTypes
 );

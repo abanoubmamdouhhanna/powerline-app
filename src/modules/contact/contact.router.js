@@ -12,7 +12,7 @@ const router = Router();
 //search contacts
 router.post(
   "/searchContacts",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   isValid(searchContactsSchema),
   contactController.searchContacts
@@ -21,7 +21,7 @@ router.post(
 //get all contacts
 router.get(
   "/getAllContacts",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   contactController.getAllContacts
 );

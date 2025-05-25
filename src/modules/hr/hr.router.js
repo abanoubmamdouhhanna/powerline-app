@@ -15,7 +15,7 @@ const router = Router();
 //create employee
 router.post(
   "/createEmployee",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   flexibleDocumentUpload(5, 25),
   isValid(createEmployeeSchema),
@@ -28,14 +28,14 @@ router.post("/login", isValid(logInSchema), hrController.logIn);
 //log out
 router.patch(
   "/logout",
-  isValid(headersSchema, true),
+
   auth(["admin", "employee", "assistant"]),
   hrController.logOut
 );
 // update employee
 router.patch(
   "/updateEmployee/:employeeId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   flexibleDocumentUpload(5, 1),
   isValid(updateEmployeeSchema),
@@ -44,7 +44,7 @@ router.patch(
 // delete employee
 router.delete(
   "/deleteEmployee/:employeeId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   hrController.deleteEmployee
 );
@@ -52,7 +52,7 @@ router.delete(
 //delete specific document
 router.delete(
   "/deleteDocument",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   hrController.deleteDocument
 );
@@ -60,7 +60,7 @@ router.delete(
 // add new document
 router.post(
   "/addUserDocument",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   flexibleDocumentUpload(5, 5),
   hrController.addUserDocument
@@ -69,21 +69,21 @@ router.post(
 //get all employees
 router.get(
   "/getAllEmployees",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   hrController.getAllEmployees
 );
 //get specific employee
 router.get(
   "/getSpecificEmployee/:employeeId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   hrController.getSpecificEmployee
 );
 //user attendance
 router.get(
   "/userAttendance",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   hrController.userAttendance
 );
@@ -91,7 +91,7 @@ router.get(
 //get job tasks
 router.get(
   "/getJobTasks/:userId",
-  isValid(headersSchema, true),
+
   auth(["employee"]),
   hrController.getJobTasks
 );
