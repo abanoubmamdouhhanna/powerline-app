@@ -15,6 +15,12 @@ router.get(
 
 //stations statistics
 router.get(
+  "/stationsStats",
+  auth(["employee"]),
+  statisticsController.stationsStats
+);
+//overview statistics
+router.get(
   "/overviewStats",
   auth(["employee"]),
   statisticsController.overviewStats

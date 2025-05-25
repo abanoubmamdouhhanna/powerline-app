@@ -92,6 +92,60 @@ export const employeeStats = asyncHandler(async (req, res) => {
 });
 //====================================================================================================================//
 //stations statistics
+export const stationsStats = asyncHandler(async (req, res, next) => {
+  const stats = await stationModel.aggregate([
+    {
+      $match: { isDeleted: false },
+    },
+    {
+      $project: {
+        stationName: 1,
+        employeesCount: { $size: { $ifNull: ["$employees", []] } },
+        noOfPumps: 1,
+        noOfPistol: 1,
+        noOfGreenPistol: 1,
+        noOfRedPistol: 1,
+        noOfDieselPistol: 1,
+        storesCount: { $size: { $ifNull: ["$stores", []] } },
+        documentsCount: { $size: { $ifNull: ["$documents", []] } },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalStations: { $sum: 1 },
+        totalPumps: { $sum: "$noOfPumps" },
+        totalPistols: { $sum: "$noOfPistol" },
+        totalGreenPistols: { $sum: "$noOfGreenPistol" },
+        totalRedPistols: { $sum: "$noOfRedPistol" },
+        totalDieselPistols: { $sum: "$noOfDieselPistol" },
+        totalStores: { $sum: "$storesCount" },
+        stationsWithEmployees: {
+          $sum: {
+            $cond: [{ $gt: ["$employeesCount", 0] }, 1, 0],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        totalStations: 1,
+        totalPumps: 1,
+        totalPistols: 1,
+        totalGreenPistols: 1,
+        totalRedPistols: 1,
+        totalDieselPistols: 1,
+        totalStores: 1,
+        stationsWithEmployees: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json(stats[0] || {});
+});
+//====================================================================================================================//
+//oveview statistics
 export const overviewStats = asyncHandler(async (req, res, next) => {
   // Aggregate station data
   const stationStats = await stationModel.aggregate([
@@ -158,7 +212,6 @@ export const overviewStats = asyncHandler(async (req, res, next) => {
     totalEmployees: employeeCount,
   });
 });
-
 //====================================================================================================================//
 //get Station Full Stats
 export const getStationFullStats = asyncHandler(async (req, res, next) => {
