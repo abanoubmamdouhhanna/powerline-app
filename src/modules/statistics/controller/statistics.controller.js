@@ -92,8 +92,9 @@ export const employeeStats = asyncHandler(async (req, res) => {
 });
 //====================================================================================================================//
 //stations statistics
-export const stationsStats = asyncHandler(async (req, res, next) => {
-  const stats = await stationModel.aggregate([
+export const overviewStats = asyncHandler(async (req, res, next) => {
+  // Aggregate station data
+  const stationStats = await stationModel.aggregate([
     {
       $match: { isDeleted: false },
     },
@@ -142,8 +143,22 @@ export const stationsStats = asyncHandler(async (req, res, next) => {
     },
   ]);
 
-  res.status(200).json(stats[0] || {});
+  // Get total employee count
+  const employeeCount = await userModel.countDocuments({
+    isDeleted: false,
+    $or: [
+      { role: "employee" },
+      { role: "admin", workFor: "company" },
+      { role: "assistant", workFor: "company" },
+    ],
+  });
+
+  res.status(200).json({
+    ...(stationStats[0] || {}),
+    totalEmployees: employeeCount,
+  });
 });
+
 //====================================================================================================================//
 //get Station Full Stats
 export const getStationFullStats = asyncHandler(async (req, res, next) => {

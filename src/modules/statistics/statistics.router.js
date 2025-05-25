@@ -15,9 +15,9 @@ router.get(
 
 //stations statistics
 router.get(
-  "/stationsStats",
+  "/overviewStats",
   auth(["employee"]),
-  statisticsController.stationsStats
+  statisticsController.overviewStats
 );
 
 //get Station Full Stats
