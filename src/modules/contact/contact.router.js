@@ -29,8 +29,7 @@ router.get(
 //get dm list unified
 router.get(
   "/getDMListUnified",
-  isValid(headersSchema, true),
-  // auth(["employee"]),
+  auth(["employee","admin","assistant"]),
   contactController.getDMListUnified
 );
 export default router;
