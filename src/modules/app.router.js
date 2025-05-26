@@ -15,6 +15,7 @@ import supplierRouter from './supplier/supplier.router.js'
 import storageRouter from "./storage/storage.router.js"
 import statisticsRouter from "./statistics/statistics.router.js"
 import permissionRouter from "./permissions/permission.router.js"
+import notificationRouter from "./notification/notification.router.js"
 
 
 const initApp = (app, express) => {
@@ -38,6 +39,7 @@ const initApp = (app, express) => {
   app.use("/storage",storageRouter);
   app.use("/statistics",statisticsRouter);
   app.use("/permission",permissionRouter)
+  app.use("/notification",notificationRouter)
 
  
   // Catch-all for undefined routes

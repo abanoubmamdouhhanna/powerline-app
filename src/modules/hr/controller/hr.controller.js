@@ -17,6 +17,7 @@ import inventoryTaskModel from "../../../../DB/models/InventoryTask.model.js";
 import stationModel from "../../../../DB/models/Station.model.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
+import userTokenModel from "../../../../DB/models/Firebase.model.js";
 
 //create Employee
 
@@ -156,7 +157,7 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
 //log in
 
 export const logIn = asyncHandler(async (req, res, next) => {
-  const { phoneOrEmail, password } = req.body;
+  const { phoneOrEmail, password, fcmToken} = req.body;
 
   // Validate input data
   if (!password || !phoneOrEmail) {
@@ -239,6 +240,11 @@ export const logIn = asyncHandler(async (req, res, next) => {
   if (loggedIn) {
     await user.save();
   }
+  await userTokenModel.findOneAndUpdate(
+    { userId: user._id },
+    { fcmToken },
+    { upsert: true, new: true }
+  );
   const userData = user.toObject();
   userData.name = userData.name[req.language] || userData.name.en;
   // Respond to client

@@ -14,3 +14,24 @@ async function getFCMToken(userId) {
 }
 
 //====================================================================================================================//
+//send notification
+export const sendNotification = async (userId, title, body) => {
+  const fcmToken = await getFCMToken(userId);
+  if (!fcmToken) return;
+
+  const message = {
+    token: fcmToken,
+    notification: {
+      title,
+      body,
+    },
+  };
+
+  try {
+    await admin.messaging().send(message);
+    console.log(`Notification sent to user ${userId}`);
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
+};
+//====================================================================================================================//

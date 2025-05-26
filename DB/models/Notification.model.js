@@ -8,16 +8,15 @@ const notificationSchema = new Schema(
       required: true,
     },
     message: {
-      type: String,
-      required: true,
+      en: { type: String },
+      ar: { type: String },
+      bn: { type: String }
     },
+    
     description: {
-      type: String,
-      required: false,
-    },
-    isRead: {
-      type: Boolean,
-      default: false,
+      en: { type: String },
+      ar: { type: String },
+      bn: { type: String }
     },
     createdAt: {
       type: Date,

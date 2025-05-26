@@ -69,7 +69,6 @@ router.post(
 //get all employees
 router.get(
   "/getAllEmployees",
-
   auth(["employee"]),
   hrController.getAllEmployees
 );
