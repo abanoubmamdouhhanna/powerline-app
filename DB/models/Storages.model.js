@@ -26,7 +26,10 @@ const storagesSchema = new Schema(
       required: true,
       min: 0,
     },
-    storageImage: String,
+    storageImage:  {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,
