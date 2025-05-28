@@ -1,6 +1,6 @@
 import cron from 'node-cron';
-import userModel from '../../DB/models/User.model';
-import notificationModel from '../../DB/models/Notification.model';
+import userModel from '../../DB/models/User.model.js';
+import notificationModel from '../../DB/models/Notification.model.js';
 import { sendNotification } from '../../services/firebase.js';
 
 // Run daily at 11:59 PM
