@@ -422,6 +422,7 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
     result: formattedResponse,
   });
 });
+
 //====================================================================================================================//
 // Delete employee
 export const deleteEmployee = asyncHandler(async (req, res, next) => {
@@ -701,36 +702,38 @@ export const getJobTasks = asyncHandler(async (req, res, next) => {
     return next(new Error("User not found", { cause: 404 }));
   }
 
-  // 2. Fetch cleaning tasks (employeeName translated)
+  // 2. Fetch cleaning tasks with createdAt
   const cleaningTasksRaw = await cleaningTaskModel.find(
     { user: userId },
-    "subTask date time location employeeName cleaningImages"
+    "subTask date time location employeeName cleaningImages createdAt"
   );
 
   const cleaningTasks = await Promise.all(
     cleaningTasksRaw.map(async (task) => {
-      const { translatedText } = await translateAutoDetect(
-        task.employeeName,
-        targetLang
-      );
+      const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
+        translateAutoDetect(task.employeeName, targetLang),
+        translateAutoDetect(task.subTask, targetLang),
+      ]);
 
       return {
+        type: "cleaning",
         _id: task._id,
-        subTask: task.subTask, // no translation
+        subTask: subTaskTranslation.translatedText,
         date: task.date,
         time: task.time,
         location: task.location, // no translation
-        employeeName: translatedText,
+        employeeName: employeeNameTranslation.translatedText,
         cleaningImages: task.cleaningImages,
+        createdAt: task.createdAt,
       };
     })
   );
 
-  // 3. Fetch inventory tasks (employeeName translated + populated pumps and pistols)
+  // 3. Fetch inventory tasks with createdAt
   const inventoryTasksRaw = await inventoryTaskModel
     .find(
       { user: userId },
-      "subTask date time location employeeName inventoryImages pumps"
+      "subTask date time location employeeName inventoryImages pumps createdAt"
     )
     .populate({
       path: "pumps.pump",
@@ -743,18 +746,19 @@ export const getJobTasks = asyncHandler(async (req, res, next) => {
 
   const inventoryTasks = await Promise.all(
     inventoryTasksRaw.map(async (task) => {
-      const { translatedText } = await translateAutoDetect(
-        task.employeeName,
-        targetLang
-      );
+      const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
+        translateAutoDetect(task.employeeName, targetLang),
+        translateAutoDetect(task.subTask, targetLang),
+      ]);
 
       return {
+        type: "inventory",
         _id: task._id,
-        subTask: task.subTask, // no translation
+        subTask: subTaskTranslation.translatedText,
         date: task.date,
         time: task.time,
         location: task.location, // no translation
-        employeeName: translatedText,
+        employeeName: employeeNameTranslation.translatedText,
         inventoryImages: task.inventoryImages,
         pumps: task.pumps.map((pumpItem) => ({
           _id: pumpItem._id,
@@ -775,16 +779,19 @@ export const getJobTasks = asyncHandler(async (req, res, next) => {
             counterNumber: pistolItem.counterNumber,
           })),
         })),
+        createdAt: task.createdAt,
       };
     })
   );
 
-  // 4. Send final response
+  // 4. Merge and sort by createdAt descending
+  const allTasks = [...cleaningTasks, ...inventoryTasks].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+
+  // 5. Send final response
   return res.status(200).json({
     status: "success",
-    data: {
-      cleaningTasks,
-      inventoryTasks,
-    },
+    data: allTasks,
   });
 });

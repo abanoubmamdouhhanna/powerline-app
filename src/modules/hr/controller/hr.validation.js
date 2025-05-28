@@ -285,8 +285,6 @@ export const updateEmployeeSchema = (lang = "en") =>
 
       IBAN: joi.string().allow("", null).optional(),
 
-      permissions: generalFields(lang).id.optional(),
-
       station: joi
         .string()
         .optional()
