@@ -197,6 +197,12 @@ export const logInSchema = (lang = "en") =>
       phoneOrEmail: generalFields(lang).phoneOrEmail.required(),
 
       password: generalFields(lang).password.required(),
+
+      fcmToken: joi.string().required().messages({
+        "string.base": getMessage("FCM_TOKEN_STRING", lang),
+        "string.empty": getMessage("FCM_TOKEN_REQUIRED", lang),
+        "any.required": getMessage("FCM_TOKEN_REQUIRED", lang),
+      }),
     })
     .required()
     .messages({
