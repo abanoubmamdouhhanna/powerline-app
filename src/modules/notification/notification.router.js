@@ -24,6 +24,13 @@ router.get(
   notificationController.getNotificationById
 );
 
+//unread count 
+router.get(
+  "/unreadCount",
+  auth(["employee"]), // protect route
+  notificationController.countUnreadNotifications
+);
+
 //delete notification
 router.delete(
   "/deleteNotification/:id",
