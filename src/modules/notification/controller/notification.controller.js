@@ -3,6 +3,30 @@ import { translateMultiLang } from "../../../../languages/api/translateMultiLang
 import { sendNotification } from "../../../../services/firebase.js";
 import { ApiFeatures } from "../../../utils/apiFeatures.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime.js";
+import isToday from "dayjs/plugin/isToday.js";
+import isYesterday from "dayjs/plugin/isYesterday.js";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
+
+dayjs.extend(relativeTime);
+dayjs.extend(isToday);
+dayjs.extend(isYesterday);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+function formatNotificationTime(date) {
+  const d = dayjs(date);
+
+  if (d.isToday()) {
+    return d.format("hh:mm A"); // e.g., 12:45 PM
+  } else if (d.isYesterday()) {
+    return "Yesterday";
+  } else {
+    return d.format("YYYY-MM-DD");
+  }
+}
+
 
 //create notification
 export const createNotification = asyncHandler(async (req, res, next) => {
@@ -59,8 +83,7 @@ export const getAllNotifications = asyncHandler(async (req, res, next) => {
       _id: notification._id,
       message,
       description,
-      createdAt: notification.createdAt,
-      updatedAt: notification.updatedAt,
+      time: formatNotificationTime(notification.createdAt),
     };
   });
 
@@ -89,7 +112,6 @@ export const getNotificationById = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Format notification with language support
   const formattedNotification = {
     _id: notification._id,
     message:
@@ -100,8 +122,7 @@ export const getNotificationById = asyncHandler(async (req, res, next) => {
       notification.description?.[language] ||
       notification.description?.en ||
       Object.values(notification.description)[0],
-    createdAt: notification.createdAt,
-    updatedAt: notification.updatedAt,
+    time: formatNotificationTime(notification.createdAt),
   };
 
   return res.status(200).json({

@@ -6,6 +6,7 @@ import initApp from "./src/modules/app.router.js";
 import { app, server } from "./services/socket.io.js";
 import cors from "cors"
 import { cronApsent } from "./src/utils/absnetCron.js";
+import { checkDocumentExpiry } from "./src/utils/checkDocumentExpiry.js";
 
 // Set directory dirname
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -15,6 +16,7 @@ const port = process.env.PORT;
 app.use(cors());
 
 cronApsent()
+checkDocumentExpiry()
 initApp(app, express);
 
 server.listen(port, () => {
