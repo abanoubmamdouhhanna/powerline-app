@@ -51,28 +51,86 @@ export const createNotification = asyncHandler(async (req, res, next) => {
 
 //====================================================================================================================//
 //get all notifications
+// export const getAllNotifications = asyncHandler(async (req, res, next) => {
+//   const language = req.language || "en";
+
+//   const apiFeatures = new ApiFeatures(
+//     notificationModel.find().lean(),
+//     req.query
+//   )
+//     .filter()
+//     .search()
+//     .select();
+
+//   // Force sort by createdAt descending
+//   apiFeatures.mongooseQuery = apiFeatures.mongooseQuery.sort({ createdAt: -1 });
+
+//   const paginationResult = await apiFeatures.paginate();
+//   const notifications = await apiFeatures.mongooseQuery;
+
+//   const formattedNotifications = notifications.map((notification) => {
+//     const description =
+//       notification.description?.[language] ||
+//       notification.description?.en ||
+//       (notification.description
+//         ? Object.values(notification.description)[0]
+//         : "");
+
+//     const message =
+//       notification.message?.[language] ||
+//       notification.message?.en ||
+//       (notification.message ? Object.values(notification.message)[0] : "");
+
+//     return {
+//       _id: notification._id,
+//       message,
+//       description,
+//       time: formatNotificationTime(notification.createdAt),
+//     };
+//   });
+
+//   return res.status(200).json({
+//     status: "success",
+//     message: "Notifications retrieved successfully",
+//     count: formattedNotifications.length,
+//     ...paginationResult,
+//     result: formattedNotifications,
+//   });
+// });
 export const getAllNotifications = asyncHandler(async (req, res, next) => {
   const language = req.language || "en";
 
   const apiFeatures = new ApiFeatures(
-    notificationModel.find().lean(),
+    notificationModel.find({ employee: req.user._id }).lean(),  // filter by user
     req.query
   )
     .filter()
     .search()
-    .sort()
     .select();
+
+  // Force sort by createdAt descending
+  apiFeatures.mongooseQuery = apiFeatures.mongooseQuery.sort({ createdAt: -1 });
 
   const paginationResult = await apiFeatures.paginate();
   const notifications = await apiFeatures.mongooseQuery;
+
+  // Find unread notifications to update
+  const unreadIds = notifications
+    .filter((n) => !n.isRead)
+    .map((n) => n._id);
+
+  if (unreadIds.length > 0) {
+    await notificationModel.updateMany(
+      { _id: { $in: unreadIds }, employee: req.user._id },
+      { $set: { isRead: true } }
+    );
+  }
 
   const formattedNotifications = notifications.map((notification) => {
     const description =
       notification.description?.[language] ||
       notification.description?.en ||
-      (notification.description
-        ? Object.values(notification.description)[0]
-        : "");
+      (notification.description ? Object.values(notification.description)[0] : "");
 
     const message =
       notification.message?.[language] ||
@@ -84,6 +142,7 @@ export const getAllNotifications = asyncHandler(async (req, res, next) => {
       message,
       description,
       time: formatNotificationTime(notification.createdAt),
+      isRead: true, // since we marked them as read now
     };
   });
 

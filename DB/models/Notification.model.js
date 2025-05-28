@@ -18,6 +18,10 @@ const notificationSchema = new Schema(
       ar: { type: String },
       bn: { type: String }
     },
+    isRead: {
+      type: Boolean,
+      default: false,
+    },
     createdAt: {
       type: Date,
       default: Date.now,
