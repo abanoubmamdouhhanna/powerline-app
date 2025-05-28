@@ -52,7 +52,6 @@ router.delete(
 //delete specific document
 router.delete(
   "/deleteDocument",
-
   auth(["employee"]),
   hrController.deleteDocument
 );
@@ -60,7 +59,6 @@ router.delete(
 // add new document
 router.post(
   "/addUserDocument",
-
   auth(["employee"]),
   flexibleDocumentUpload(5, 5),
   hrController.addUserDocument
@@ -75,14 +73,12 @@ router.get(
 //get specific employee
 router.get(
   "/getSpecificEmployee/:employeeId",
-
   auth(["employee"]),
   hrController.getSpecificEmployee
 );
 //user attendance
 router.get(
-  "/userAttendance",
-
+  "/userAttendance/:userId",
   auth(["employee"]),
   hrController.userAttendance
 );
@@ -90,7 +86,6 @@ router.get(
 //get job tasks
 router.get(
   "/getJobTasks/:userId",
-
   auth(["employee"]),
   hrController.getJobTasks
 );

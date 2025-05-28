@@ -675,7 +675,7 @@ export const getSpecificEmployee = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //user attendance
 export const userAttendance = asyncHandler(async (req, res, next) => {
-  const { userId } = req.body;
+  const { userId } = req.params;
   const user = await userModel.findById(userId);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
