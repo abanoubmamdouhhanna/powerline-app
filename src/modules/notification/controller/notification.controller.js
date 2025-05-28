@@ -43,7 +43,7 @@ export const createNotification = asyncHandler(async (req, res, next) => {
     description: translatedDescription,
   });
 
-  sendNotification(employeeId, translatedMessage, translatedDescription);
+  sendNotification(employeeId, translatedMessage, translatedDescription,req.language);
   res
     .status(200)
     .json({ message: "Notification Created", data: createNotification });
