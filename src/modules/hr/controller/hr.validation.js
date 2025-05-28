@@ -119,8 +119,6 @@ export const createEmployeeSchema = (lang = "en") =>
 
       IBAN: joi.string().allow("", null),
 
-      permissions: generalFields(lang).id,
-
       station: generalFields(lang).id,
 
       salary: joi
