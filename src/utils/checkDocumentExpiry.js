@@ -52,5 +52,5 @@ export const checkDocumentExpiry = () => {
       console.error('Error in cron job:', err.message);
     }
   });
-  console.log("Cron job for Absent is running...");
+  console.log("Cron job for check documents is running...");
 };

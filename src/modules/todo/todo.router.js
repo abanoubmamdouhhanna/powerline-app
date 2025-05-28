@@ -15,6 +15,9 @@ router.post(
 //get tasks for user
 router.get("/getAllTasks", auth(["employee"]), todoController.getTasks);
 
+//get tasks for user by admin
+router.get("/getTaskbyId/:userId", auth(["employee"]), todoController.getTaskbyId);
+
 //change status
 router.patch("/changeStatus", auth(["employee"]), todoController.changeStatus);
 

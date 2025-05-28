@@ -63,55 +63,6 @@ const attendanceSchema = new Schema(
   },
   { timestamps: true }
 );
-
-// Pre-save middleware to calculate workingHours
-// attendanceSchema.pre("save", function (next) {
-//   // Handle missing checkIn
-
-//   const checkInTime = new Date(
-//     `1970-01-01T${convertTo24Hour(this.checkIn)}:00`
-//   );
-
-//   // Determine shift type from check-in (AM or PM)
-//   const shiftType = this.checkIn.includes("AM") ? "Night" : "Day";
-
-//   // Late if:
-//   // - Night shift → after 12:00 AM
-//   // - Day shift → after 12:00 PM
-//   const shiftDeadline =
-//     shiftType === "Night"
-//       ? new Date("1970-01-01T00:00:00")
-//       : new Date("1970-01-01T12:00:00");
-
-//   this.status = checkInTime > shiftDeadline ? "Late" : "On Time";
-
-//   // Only calculate working hours if checkOut is provided
-//   if (this.checkOut) {
-//     let checkOutTime = new Date(
-//       `1970-01-01T${convertTo24Hour(this.checkOut)}:00`
-//     );
-//     // console.log(checkInTime);
-
-//     // If checkOut is earlier than checkIn → assume it’s next day
-//     if (checkOutTime < checkInTime) {
-//       checkOutTime.setDate(checkOutTime.getDate() + 1);
-//     }
-
-//     const diffMs = checkOutTime - checkInTime;
-
-//     const totalMinutes = Math.floor(diffMs / 1000 / 60);
-
-//     if (totalMinutes > 0) {
-//       const hours = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
-//       const minutes = String(totalMinutes % 60).padStart(2, "0");
-//       this.workingHours = `${hours}:${minutes} Hrs`;
-//     } else {
-//       this.workingHours = "00:00 Hrs";
-//     }
-//   }
-
-//   next();
-// });
 //=============================================================================
 attendanceSchema.pre("save", async function (next) {
   const Attendance = this;

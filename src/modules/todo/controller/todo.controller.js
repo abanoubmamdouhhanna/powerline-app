@@ -8,6 +8,7 @@ import toDoModel from "../../../../DB/models/ToDo.model.js";
 import { ApiFeatures } from "../../../utils/apiFeatures.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
 import cloudinary from "../../../utils/cloudinary.js";
+import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 
 //create task
 export const createTask = asyncHandler(async (req, res, next) => {
@@ -178,12 +179,114 @@ export const getTasks = asyncHandler(async (req, res, next) => {
           }))
         : [];
 
+      // Translate status using Google Translate API if targetLang is NOT English
+      let translatedStatus = task.status;
+      if (typeof task.status === "string" && targetLang !== "en") {
+        try {
+          const { translatedText } = await translateAutoDetect(task.status, targetLang);
+          translatedStatus = translatedText;
+        } catch (error) {
+          // fallback to original status if translation fails
+          translatedStatus = task.status;
+          console.error("Status translation failed:", error);
+        }
+      }
+      
+
       return {
         ...task.toObject(),
         taskName: translatedTaskName,
         taskDetails: translatedTaskDetails,
         comment: translatedComment,
         documents: translatedDocuments,
+        status: translatedStatus,
+      };
+    })
+  );
+
+  return res.status(200).json({
+    message: "Success",
+    result: tasks,
+  });
+});
+
+//====================================================================================================================//
+//get tasks by id
+export const getTaskbyId = asyncHandler(async (req, res, next) => {
+  const { userId } = req.params;
+  const targetLang = req.language || "en";
+
+  const tasksRaw = await toDoModel.find({ user: userId });
+
+  const tasks = await Promise.all(
+    tasksRaw.map(async (task) => {
+      // Translate taskName, taskDetails, comment (existing code)
+      const translatedTaskName =
+        typeof task.taskName === "object"
+          ? task.taskName[targetLang] ||
+            task.taskName.en ||
+            Object.values(task.taskName)[0]
+          : task.taskName;
+
+      const translatedTaskDetails =
+        typeof task.taskDetails === "object"
+          ? task.taskDetails[targetLang] ||
+            task.taskDetails.en ||
+            Object.values(task.taskDetails)[0]
+          : task.taskDetails;
+
+      const translatedComment =
+        typeof task.comment === "object"
+          ? task.comment[targetLang] ||
+            task.comment.en ||
+            Object.values(task.comment)[0]
+          : task.comment;
+
+      // Translate documents titles (existing code)
+      const translatedDocuments = Array.isArray(task.documents)
+        ? task.documents.map((doc) => ({
+            ...doc.toObject(),
+            title:
+              typeof doc.title === "object"
+                ? doc.title[targetLang] ||
+                  doc.title.en ||
+                  Object.values(doc.title)[0]
+                : doc.title,
+          }))
+        : [];
+
+      // Translate status dynamically if it's a string (or fallback to string if object)
+      let translatedStatus = "";
+      if (typeof task.status === "string") {
+        if (targetLang === "en") {
+          translatedStatus = task.status; // no need to translate if target is English and original is English
+        } else {
+          try {
+            const { translatedText } = await translateAutoDetect(task.status, targetLang);
+            translatedStatus = translatedText;
+          } catch (error) {
+            console.error("Failed to translate status:", error);
+            translatedStatus = task.status; // fallback original text on error
+          }
+        }
+      } else if (typeof task.status === "object") {
+        // If status is stored as multilingual object, prefer the targetLang or fallback
+        translatedStatus =
+          task.status[targetLang] ||
+          task.status.en ||
+          Object.values(task.status)[0] ||
+          "";
+      } else {
+        translatedStatus = "";
+      }
+
+      return {
+        ...task.toObject(),
+        taskName: translatedTaskName,
+        taskDetails: translatedTaskDetails,
+        comment: translatedComment,
+        documents: translatedDocuments,
+        status: translatedStatus,
       };
     })
   );
@@ -236,65 +339,81 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
   const paginationResult = await apiFeatures.paginate();
   const rawTasks = await apiFeatures.mongooseQuery;
 
-  // Translate fields
-  const translatedTasks = rawTasks.map((task) => {
-    const translatedTaskName =
-      typeof task.taskName === "object"
-        ? task.taskName[targetLang] ||
-          task.taskName.en ||
-          Object.values(task.taskName)[0]
-        : task.taskName;
+  // Translate fields with async map to support translateAutoDetect for status
+  const translatedTasks = await Promise.all(
+    rawTasks.map(async (task) => {
+      const translatedTaskName =
+        typeof task.taskName === "object"
+          ? task.taskName[targetLang] ||
+            task.taskName.en ||
+            Object.values(task.taskName)[0]
+          : task.taskName;
 
-    const translatedTaskDetails =
-      typeof task.taskDetails === "object"
-        ? task.taskDetails[targetLang] ||
-          task.taskDetails.en ||
-          Object.values(task.taskDetails)[0]
-        : task.taskDetails;
+      const translatedTaskDetails =
+        typeof task.taskDetails === "object"
+          ? task.taskDetails[targetLang] ||
+            task.taskDetails.en ||
+            Object.values(task.taskDetails)[0]
+          : task.taskDetails;
 
-    const translatedComment =
-      typeof task.comment === "object"
-        ? task.comment[targetLang] ||
-          task.comment.en ||
-          Object.values(task.comment)[0]
-        : task.comment;
+      const translatedComment =
+        typeof task.comment === "object"
+          ? task.comment[targetLang] ||
+            task.comment.en ||
+            Object.values(task.comment)[0]
+          : task.comment;
 
-    const translatedDocuments = Array.isArray(task.documents)
-      ? task.documents.map((doc) => ({
-          ...doc.toObject(),
-          title:
-            typeof doc.title === "object"
-              ? doc.title[targetLang] ||
-                doc.title.en ||
-                Object.values(doc.title)[0]
-              : doc.title,
-        }))
-      : [];
+      const translatedDocuments = Array.isArray(task.documents)
+        ? task.documents.map((doc) => ({
+            ...doc.toObject(),
+            title:
+              typeof doc.title === "object"
+                ? doc.title[targetLang] ||
+                  doc.title.en ||
+                  Object.values(doc.title)[0]
+                : doc.title,
+          }))
+        : [];
 
-    // Translate user name if populated
-    const translatedUser = task.user
-      ? {
-          _id: task.user._id,
-          email: task.user.email,
-          avatar: task.user.imageUrl,
-          name:
-            typeof task.user.name === "object"
-              ? task.user.name[targetLang] ||
-                task.user.name.en ||
-                Object.values(task.user.name)[0]
-              : task.user.name,
+      // Translate user name if populated
+      const translatedUser = task.user
+        ? {
+            _id: task.user._id,
+            email: task.user.email,
+            avatar: task.user.imageUrl,
+            name:
+              typeof task.user.name === "object"
+                ? task.user.name[targetLang] ||
+                  task.user.name.en ||
+                  Object.values(task.user.name)[0]
+                : task.user.name,
+          }
+        : null;
+
+      // Translate status using translateAutoDetect (only if targetLang !== 'en')
+      let translatedStatus = task.status;
+      if (typeof task.status === "string" && targetLang !== "en") {
+        try {
+          const { translatedText } = await translateAutoDetect(task.status, targetLang);
+          translatedStatus = translatedText;
+        } catch (error) {
+          // fallback to original status if translation fails
+          translatedStatus = task.status;
+          console.error("Status translation failed:", error);
         }
-      : null;
+      }
 
-    return {
-      ...task.toObject(),
-      taskName: translatedTaskName,
-      taskDetails: translatedTaskDetails,
-      comment: translatedComment,
-      documents: translatedDocuments,
-      user: translatedUser,
-    };
-  });
+      return {
+        ...task.toObject(),
+        taskName: translatedTaskName,
+        taskDetails: translatedTaskDetails,
+        comment: translatedComment,
+        documents: translatedDocuments,
+        user: translatedUser,
+        status: translatedStatus,
+      };
+    })
+  );
 
   // Send response
   return res.status(200).json({
@@ -304,6 +423,7 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
     result: translatedTasks,
   });
 });
+
 //====================================================================================================================//
 //update task
 export const updateTask = asyncHandler(async (req, res, next) => {
