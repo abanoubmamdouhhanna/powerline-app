@@ -9,6 +9,7 @@ import { ApiFeatures } from "../../../utils/apiFeatures.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
 import cloudinary from "../../../utils/cloudinary.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
+import stationModel from "../../../../DB/models/Station.model.js";
 
 //create task
 export const createTask = asyncHandler(async (req, res, next) => {
@@ -296,7 +297,6 @@ export const getTaskbyId = asyncHandler(async (req, res, next) => {
     result: tasks,
   });
 });
-
 //====================================================================================================================//
 //change status
 export const changeStatus = asyncHandler(async (req, res, next) => {
@@ -316,12 +316,20 @@ export const changeStatus = asyncHandler(async (req, res, next) => {
 export const getAllTasks = asyncHandler(async (req, res, next) => {
   const targetLang = req.language || "en";
 
-  // Prepare the mongoose query with user population
+  // 1. 🔍 Find the user's station
+  const station = await stationModel.findOne({ employees: req.user._id });
+  const translatedStationName = station
+    ? station.stationName?.[targetLang] ||
+      station.stationName?.en ||
+      Object.values(station.stationName || {})[0]
+    : null;
+
+  // 2. 🔍 Build mongoose query
   const mongooseQuery = toDoModel
     .find({ createdBy: req.user._id })
-    .populate("user", "name email imageUrl"); // Include name and email from user
+    .populate("user", "name email imageUrl");
 
-  // 🔥 Parse date strings to Date objects
+  // 3. 🗓 Parse date filters
   const dateFields = ["startDate", "deadline"];
   for (const field of dateFields) {
     if (req.query[field]) {
@@ -334,12 +342,12 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Apply filters and pagination
+  // 4. 🧭 Apply filters and pagination
   const apiFeatures = new ApiFeatures(mongooseQuery, req.query).filter();
   const paginationResult = await apiFeatures.paginate();
   const rawTasks = await apiFeatures.mongooseQuery;
 
-  // Translate fields with async map to support translateAutoDetect for status
+  // 5. 🌍 Translate tasks
   const translatedTasks = await Promise.all(
     rawTasks.map(async (task) => {
       const translatedTaskName =
@@ -375,7 +383,6 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
           }))
         : [];
 
-      // Translate user name if populated
       const translatedUser = task.user
         ? {
             _id: task.user._id,
@@ -390,18 +397,29 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
           }
         : null;
 
-      // Translate status using translateAutoDetect (only if targetLang !== 'en')
-      let translatedStatus = task.status;
-      if (typeof task.status === "string" && targetLang !== "en") {
+      // 🌈 Status color map
+      const statusColorMap = {
+        "Not Started": "red",
+        "To Do": "warning",
+        "Completed": "green",
+      };
+
+      const originalStatus = task.status;
+      let translatedStatus = originalStatus;
+
+      if (typeof originalStatus === "string" && targetLang !== "en") {
         try {
-          const { translatedText } = await translateAutoDetect(task.status, targetLang);
+          const { translatedText } = await translateAutoDetect(originalStatus, targetLang);
           translatedStatus = translatedText;
         } catch (error) {
-          // fallback to original status if translation fails
-          translatedStatus = task.status;
           console.error("Status translation failed:", error);
         }
       }
+
+      // 🕒 Separate createdAt into createdDate and createdTime
+      const createdAt = new Date(task.createdAt);
+      const createdDate = createdAt.toISOString().split("T")[0];
+      const createdTime = createdAt.toTimeString().slice(0, 5);
 
       return {
         ...task.toObject(),
@@ -410,12 +428,15 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
         comment: translatedComment,
         documents: translatedDocuments,
         user: translatedUser,
+        stationName: translatedStationName,
         status: translatedStatus,
+        statusColor: statusColorMap[originalStatus] || "gray",
+        createdDate,
+        createdTime,
       };
     })
   );
 
-  // Send response
   return res.status(200).json({
     message: "Success",
     count: translatedTasks.length,
@@ -423,7 +444,6 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
     result: translatedTasks,
   });
 });
-
 //====================================================================================================================//
 //update task
 export const updateTask = asyncHandler(async (req, res, next) => {
