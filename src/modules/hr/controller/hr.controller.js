@@ -680,16 +680,31 @@ export const userAttendance = asyncHandler(async (req, res, next) => {
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
+
   const attendance = await attendanceModel.find(
     { user: userId },
     "date checkIn checkOut workingHours status"
   );
+
+  const statusColorMap = {
+    "On Time": "green",
+    "Late": "red",
+    "Absent": "warning",
+    "Day Off": "blue",
+  };
+
+  const formattedAttendance = attendance.map((entry) => ({
+    ...entry.toObject(),
+    statusColor: statusColorMap[entry.status] || "gray", // fallback color
+  }));
+
   return res.status(201).json({
     status: "success",
     attendanceDays: attendance.length,
-    result: attendance,
+    result: formattedAttendance,
   });
 });
+
 //====================================================================================================================//
 //get job tasks
 export const getJobTasks = asyncHandler(async (req, res, next) => {

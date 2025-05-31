@@ -180,19 +180,39 @@ export const getTasks = asyncHandler(async (req, res, next) => {
           }))
         : [];
 
-      // Translate status using Google Translate API if targetLang is NOT English
-      let translatedStatus = task.status;
+      // 🌈 Status color mapping
+      const statusColorMap = {
+        "Not Started": "red",
+        "To Do": "warning",
+        "Completed": "green",
+      };
+
+      const originalStatus =
+        typeof task.status === "string"
+          ? task.status
+          : task.status?.en || Object.values(task.status || {})[0] || "";
+
+      let translatedStatus = originalStatus;
+
       if (typeof task.status === "string" && targetLang !== "en") {
         try {
           const { translatedText } = await translateAutoDetect(task.status, targetLang);
           translatedStatus = translatedText;
         } catch (error) {
-          // fallback to original status if translation fails
-          translatedStatus = task.status;
           console.error("Status translation failed:", error);
         }
+      } else if (typeof task.status === "object") {
+        translatedStatus =
+          task.status[targetLang] ||
+          task.status.en ||
+          Object.values(task.status)[0] ||
+          "";
       }
-      
+
+      // 🕒 createdDate & createdTime
+      const createdAt = new Date(task.createdAt);
+      const createdDate = createdAt.toISOString().split("T")[0];
+      const createdTime = createdAt.toTimeString().slice(0, 5);
 
       return {
         ...task.toObject(),
@@ -201,6 +221,9 @@ export const getTasks = asyncHandler(async (req, res, next) => {
         comment: translatedComment,
         documents: translatedDocuments,
         status: translatedStatus,
+        statusColor: statusColorMap[originalStatus] || "gray",
+        createdDate,
+        createdTime,
       };
     })
   );
@@ -210,7 +233,6 @@ export const getTasks = asyncHandler(async (req, res, next) => {
     result: tasks,
   });
 });
-
 //====================================================================================================================//
 //get tasks by id
 export const getTaskbyId = asyncHandler(async (req, res, next) => {
@@ -221,7 +243,7 @@ export const getTaskbyId = asyncHandler(async (req, res, next) => {
 
   const tasks = await Promise.all(
     tasksRaw.map(async (task) => {
-      // Translate taskName, taskDetails, comment (existing code)
+      // 🌍 Translate fields
       const translatedTaskName =
         typeof task.taskName === "object"
           ? task.taskName[targetLang] ||
@@ -243,7 +265,6 @@ export const getTaskbyId = asyncHandler(async (req, res, next) => {
             Object.values(task.comment)[0]
           : task.comment;
 
-      // Translate documents titles (existing code)
       const translatedDocuments = Array.isArray(task.documents)
         ? task.documents.map((doc) => ({
             ...doc.toObject(),
@@ -256,30 +277,41 @@ export const getTaskbyId = asyncHandler(async (req, res, next) => {
           }))
         : [];
 
-      // Translate status dynamically if it's a string (or fallback to string if object)
-      let translatedStatus = "";
+      // 🌈 Define status color map
+      const statusColorMap = {
+        "Not Started": "red",
+        "To Do": "warning",
+        "Completed": "green",
+      };
+
+      const originalStatus =
+        typeof task.status === "string"
+          ? task.status
+          : task.status?.en || Object.values(task.status || {})[0] || "";
+
+      let translatedStatus = originalStatus;
+
       if (typeof task.status === "string") {
-        if (targetLang === "en") {
-          translatedStatus = task.status; // no need to translate if target is English and original is English
-        } else {
+        if (targetLang !== "en") {
           try {
             const { translatedText } = await translateAutoDetect(task.status, targetLang);
             translatedStatus = translatedText;
           } catch (error) {
             console.error("Failed to translate status:", error);
-            translatedStatus = task.status; // fallback original text on error
           }
         }
       } else if (typeof task.status === "object") {
-        // If status is stored as multilingual object, prefer the targetLang or fallback
         translatedStatus =
           task.status[targetLang] ||
           task.status.en ||
           Object.values(task.status)[0] ||
           "";
-      } else {
-        translatedStatus = "";
       }
+
+      // 🕒 createdDate & createdTime
+      const createdAt = new Date(task.createdAt);
+      const createdDate = createdAt.toISOString().split("T")[0];
+      const createdTime = createdAt.toTimeString().slice(0, 5);
 
       return {
         ...task.toObject(),
@@ -288,6 +320,9 @@ export const getTaskbyId = asyncHandler(async (req, res, next) => {
         comment: translatedComment,
         documents: translatedDocuments,
         status: translatedStatus,
+        statusColor: statusColorMap[originalStatus] || "gray",
+        createdDate,
+        createdTime,
       };
     })
   );
@@ -297,6 +332,7 @@ export const getTaskbyId = asyncHandler(async (req, res, next) => {
     result: tasks,
   });
 });
+
 //====================================================================================================================//
 //change status
 export const changeStatus = asyncHandler(async (req, res, next) => {
