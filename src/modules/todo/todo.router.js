@@ -22,7 +22,7 @@ router.get("/getTaskbyId/:userId", auth(["employee"]), todoController.getTaskbyI
 router.patch("/changeStatus", auth(["employee"]), todoController.changeStatus);
 
 //get all tasks for admin
-router.get("/allTasks", auth(["employee"]), todoController.getAllTasks);
+router.get("/allTasks", auth(["assistant" ,"employee"]), todoController.getAllTasks);
 
 //update task
 router.patch(

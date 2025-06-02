@@ -349,6 +349,137 @@ export const changeStatus = asyncHandler(async (req, res, next) => {
 });
 //====================================================================================================================//
 //gat all tasks
+// export const getAllTasks = asyncHandler(async (req, res, next) => {
+//   const targetLang = req.language || "en";
+
+//   // 1. 🔍 Find the user's station
+//   const station = await stationModel.findOne({ employees: req.user._id });
+//   const translatedStationName = station
+//     ? station.stationName?.[targetLang] ||
+//       station.stationName?.en ||
+//       Object.values(station.stationName || {})[0]
+//     : null;
+
+//   // 2. 🔍 Build mongoose query
+//   const mongooseQuery = toDoModel
+//     .find({ createdBy: req.user._id })
+//     .populate("user", "name email imageUrl timeWork permissions");
+
+//   // 3. 🗓 Parse date filters
+//   const dateFields = ["startDate", "deadline"];
+//   for (const field of dateFields) {
+//     if (req.query[field]) {
+//       for (const operator in req.query[field]) {
+//         const value = req.query[field][operator];
+//         if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+//           req.query[field][operator] = new Date(value);
+//         }
+//       }
+//     }
+//   }
+
+//   // 4. 🧭 Apply filters and pagination
+//   const apiFeatures = new ApiFeatures(mongooseQuery, req.query).filter();
+//   const paginationResult = await apiFeatures.paginate();
+//   const rawTasks = await apiFeatures.mongooseQuery;
+
+//   // 5. 🌍 Translate tasks
+//   const translatedTasks = await Promise.all(
+//     rawTasks.map(async (task) => {
+//       const translatedTaskName =
+//         typeof task.taskName === "object"
+//           ? task.taskName[targetLang] ||
+//             task.taskName.en ||
+//             Object.values(task.taskName)[0]
+//           : task.taskName;
+
+//       const translatedTaskDetails =
+//         typeof task.taskDetails === "object"
+//           ? task.taskDetails[targetLang] ||
+//             task.taskDetails.en ||
+//             Object.values(task.taskDetails)[0]
+//           : task.taskDetails;
+
+//       const translatedComment =
+//         typeof task.comment === "object"
+//           ? task.comment[targetLang] ||
+//             task.comment.en ||
+//             Object.values(task.comment)[0]
+//           : task.comment;
+
+//       const translatedDocuments = Array.isArray(task.documents)
+//         ? task.documents.map((doc) => ({
+//             ...doc.toObject(),
+//             title:
+//               typeof doc.title === "object"
+//                 ? doc.title[targetLang] ||
+//                   doc.title.en ||
+//                   Object.values(doc.title)[0]
+//                 : doc.title,
+//           }))
+//         : [];
+
+//       const translatedUser = task.user
+//         ? {
+//             _id: task.user._id,
+//             email: task.user.email,
+//             avatar: task.user.imageUrl,
+//             name:
+//               typeof task.user.name === "object"
+//                 ? task.user.name[targetLang] ||
+//                   task.user.name.en ||
+//                   Object.values(task.user.name)[0]
+//                 : task.user.name,
+//           }
+//         : null;
+
+//       // 🌈 Status color map
+//       const statusColorMap = {
+//         "Not Started": "red",
+//         "To Do": "warning",
+//         "Completed": "green",
+//       };
+
+//       const originalStatus = task.status;
+//       let translatedStatus = originalStatus;
+
+//       if (typeof originalStatus === "string" && targetLang !== "en") {
+//         try {
+//           const { translatedText } = await translateAutoDetect(originalStatus, targetLang);
+//           translatedStatus = translatedText;
+//         } catch (error) {
+//           console.error("Status translation failed:", error);
+//         }
+//       }
+
+//       // 🕒 Separate createdAt into createdDate and createdTime
+//       const createdAt = new Date(task.createdAt);
+//       const createdDate = createdAt.toISOString().split("T")[0];
+//       const createdTime = createdAt.toTimeString().slice(0, 5);
+
+//       return {
+//         ...task.toObject(),
+//         taskName: translatedTaskName,
+//         taskDetails: translatedTaskDetails,
+//         comment: translatedComment,
+//         documents: translatedDocuments,
+//         user: translatedUser,
+//         stationName: translatedStationName,
+//         status: translatedStatus,
+//         statusColor: statusColorMap[originalStatus] || "gray",
+//         createdDate,
+//         createdTime,
+//       };
+//     })
+//   );
+
+//   return res.status(200).json({
+//     message: "Success",
+//     count: translatedTasks.length,
+//     pagination: paginationResult,
+//     result: translatedTasks,
+//   });
+// });
 export const getAllTasks = asyncHandler(async (req, res, next) => {
   const targetLang = req.language || "en";
 
@@ -360,10 +491,17 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
       Object.values(station.stationName || {})[0]
     : null;
 
-  // 2. 🔍 Build mongoose query
+  // 2. 🔍 Build mongoose query with nested population
   const mongooseQuery = toDoModel
     .find({ createdBy: req.user._id })
-    .populate("user", "name email imageUrl");
+    .populate({
+      path: "user",
+      select: "name email imageUrl timeWork permissions",
+      populate: {
+        path: "permissions",
+        select: "permissionName",
+      },
+    });
 
   // 3. 🗓 Parse date filters
   const dateFields = ["startDate", "deadline"];
@@ -424,12 +562,20 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
             _id: task.user._id,
             email: task.user.email,
             avatar: task.user.imageUrl,
+            timeWork: task.user.timeWork,
             name:
               typeof task.user.name === "object"
                 ? task.user.name[targetLang] ||
                   task.user.name.en ||
                   Object.values(task.user.name)[0]
                 : task.user.name,
+            permissionName:
+              task.user.permissions &&
+              typeof task.user.permissions.permissionName === "object"
+                ? task.user.permissions.permissionName[targetLang] ||
+                  task.user.permissions.permissionName.en ||
+                  Object.values(task.user.permissions.permissionName)[0]
+                : null,
           }
         : null;
 
@@ -480,6 +626,7 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
     result: translatedTasks,
   });
 });
+
 //====================================================================================================================//
 //update task
 export const updateTask = asyncHandler(async (req, res, next) => {
