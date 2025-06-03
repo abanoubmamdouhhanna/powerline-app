@@ -1,7 +1,7 @@
 import cloudinary from "./cloudinary.js";
 import mime from "mime-types"; // install with: npm i mime-types
 
-//only images
+//only image
 export const uploadImageCloudinary = async (file, folderpath, publicId) => {
   if (!file?.path) return null;
   try {

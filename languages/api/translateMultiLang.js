@@ -18,3 +18,4 @@ export const translateMultiLang = async (text) => {
 
   return Object.fromEntries(translations.map(({ lang, text }) => [lang, text]));
 };
+

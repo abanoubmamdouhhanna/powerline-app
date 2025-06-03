@@ -8,7 +8,7 @@ const pumpSchema = new Schema(
       required: true,
     },
     pumpName: {
-      en: { type: String, required: true },
+      en: { type: String},
       ar: { type: String },
       bn: { type: String },
     },   
