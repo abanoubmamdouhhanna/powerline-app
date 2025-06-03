@@ -15,8 +15,7 @@ const router = Router();
 //create employee
 router.post(
   "/createEmployee",
-
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   flexibleDocumentUpload(5, 25),
   isValid(createEmployeeSchema),
   hrController.createEmployee
@@ -35,7 +34,6 @@ router.patch(
 // update employee
 router.patch(
   "/updateEmployee/:employeeId",
-
   auth(["employee"]),
   flexibleDocumentUpload(5, 1),
   isValid(updateEmployeeSchema),
