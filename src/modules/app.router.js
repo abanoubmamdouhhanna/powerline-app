@@ -16,7 +16,7 @@ import storageRouter from "./storage/storage.router.js"
 import statisticsRouter from "./statistics/statistics.router.js"
 import permissionRouter from "./permissions/permission.router.js"
 import notificationRouter from "./notification/notification.router.js"
-
+import maintenanceRouter from "./maintenance/maintenance.router.js"
 
 const initApp = (app, express) => {
   // Built-in Middleware
@@ -40,6 +40,7 @@ const initApp = (app, express) => {
   app.use("/statistics",statisticsRouter);
   app.use("/permission",permissionRouter)
   app.use("/notification",notificationRouter)
+  app.use("/maintenance",maintenanceRouter)
 
  
   // Catch-all for undefined routes
