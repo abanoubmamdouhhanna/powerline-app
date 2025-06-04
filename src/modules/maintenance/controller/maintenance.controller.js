@@ -9,6 +9,7 @@ import {
 } from "../../../utils/cloudinaryHelpers.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
+import { ApiFeatures } from "../../../utils/apiFeatures.js";
 
 //create maintenance request
 export const maintenanceRequest = asyncHandler(async (req, res, next) => {
@@ -291,6 +292,101 @@ export const getMaintenanceRequestById = asyncHandler(
         color,
         stationName,
       },
+    });
+  }
+);
+
+//====================================================================================================================//
+// Get maintenance request by stationId
+export const getMaintenanceRequestByStationId = asyncHandler(
+  async (req, res, next) => {
+    const userId = req.user._id;
+    const targetLang = req.language || "en";
+
+    // 1. Validate user
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return next(new Error("User not found", { cause: 404 }));
+    }
+
+    // 2. Base mongoose query
+    let mongooseQuery = maintenanceModel
+      .find({ station: user.station })
+      .populate("station", "stationName");
+
+    // 3. Apply filters, sort, paginate
+    const apiFeatures = new ApiFeatures(mongooseQuery, req.query)
+      .filter()
+      .sort(); // You can add .search() or .select() here
+
+    const paginationResult = await apiFeatures.paginate();
+    const maintenanceRequests = await apiFeatures.mongooseQuery.lean();
+
+    // 4. Format and translate response
+    const formattedRequests = await Promise.all(
+      maintenanceRequests.map(async (request) => {
+        const employeeName =
+          request.employeeName?.[targetLang] ||
+          request.employeeName?.en ||
+          Object.values(request.employeeName || {})[0] ||
+          "";
+
+        const description =
+          request.description?.[targetLang] ||
+          request.description?.en ||
+          Object.values(request.description || {})[0] ||
+          "";
+
+        let translatedStatus = request.status || "";
+        try {
+          const { translatedText } = await translateAutoDetect(
+            translatedStatus,
+            targetLang
+          );
+          translatedStatus = translatedText;
+        } catch (err) {
+          console.error(
+            `Translation error for status "${request.status}":`,
+            err.message
+          );
+        }
+
+        let statusColor = "";
+        if (request.status === "Under maintenance") {
+          statusColor = "warning";
+        } else if (request.status === "Completed") {
+          statusColor = "green";
+        }
+
+        const stationName =
+          request.station?.stationName?.[targetLang] ||
+          request.station?.stationName?.en ||
+          Object.values(request.station?.stationName || {})[0] ||
+          "";
+
+        const {
+          station, // exclude from rest
+          ...rest
+        } = request;
+
+        return {
+          ...rest,
+          employeeName,
+          description,
+          status: translatedStatus,
+          statusColor,
+          stationName,
+        };
+      })
+    );
+
+    // 5. Send response
+    res.status(200).json({
+      status: "success",
+      message: "Maintenance requests retrieved successfully",
+      count: formattedRequests.length,
+      pagination: paginationResult,
+      result: formattedRequests,
     });
   }
 );

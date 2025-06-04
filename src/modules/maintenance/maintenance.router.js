@@ -37,6 +37,12 @@ router.get(
   auth(["employee"]),
   maintenanceController.getMaintenanceRequestById
 );
+//get maintenance by stationId
+router.get(
+  "/maintenanceByStationId",
+  auth(["employee"]),
+  maintenanceController.getMaintenanceRequestByStationId
+);
 
 //delete maintenance request
 router.delete(
