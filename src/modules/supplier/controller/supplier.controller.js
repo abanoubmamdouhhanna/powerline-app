@@ -77,8 +77,8 @@ export const addSupplier = asyncHandler(async (req, res, next) => {
 //update supplier
 export const updateSupplier = asyncHandler(async (req, res, next) => {
   const { supplierId } = req.params;
-  const language = req.language || 'en'; // Default to English if language not specified
-  
+  const language = req.language || "en"; // Default to English if language not specified
+
   const {
     supplierName,
     phone,
@@ -90,7 +90,9 @@ export const updateSupplier = asyncHandler(async (req, res, next) => {
 
   const supplier = await supplierModel.findById(supplierId);
   if (!supplier) {
-    return next(new Error(getTranslation("Supplier not found", language), { cause: 404 }));
+    return next(
+      new Error(getTranslation("Supplier not found", language), { cause: 404 })
+    );
   }
 
   const updates = {};
@@ -149,7 +151,7 @@ export const updateSupplier = asyncHandler(async (req, res, next) => {
     IBAN: updatedSupplier.IBAN,
     station: updatedSupplier.station,
     createdAt: updatedSupplier.createdAt,
-    updatedAt: updatedSupplier.updatedAt
+    updatedAt: updatedSupplier.updatedAt,
   };
 
   return res.status(200).json({
@@ -300,7 +302,10 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
 
   const supplierRequests = await suppliesRequestModel
     .find(
-      {},
+      {
+        supplier: { $ne: null },
+        station: { $ne: null },
+      },
       "supplier station fuelAmount fuelType status carImage receiptImage safetyImage specsImage isCarCompleted matchingSpecs matchingSafety"
     )
     .populate("stationDetails", "stationName")
@@ -337,11 +342,13 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
   const translateSet = async (values, target, outputMap) => {
     await Promise.all(
       values.map(async (val) => {
-        const { translatedText } = await translateAutoDetect(
-          val?.toString(),
-          target
-        );
-        outputMap[val] = translatedText;
+        if (val !== undefined && val !== null) {
+          const { translatedText } = await translateAutoDetect(
+            val.toString(),
+            target
+          );
+          outputMap[val] = translatedText;
+        }
       })
     );
   };
@@ -352,20 +359,28 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
   await translateSet(uniqueSafetyMatches, targetLang, translatedSafetyMatches);
   await translateSet(uniqueCarCompleted, targetLang, translatedCarCompleted);
 
-  // Format final result
   const formattedRequests = supplierRequests.map((req) => {
-    const stationName =
-      req.stationDetails?.[0]?.stationName?.[targetLang] ||
-      req.stationDetails?.[0]?.stationName?.en;
-
+    const stationData = req.stationDetails?.[0];
     const supplierData = req.supplierDetails?.[0];
+
+    if (!stationData || !supplierData) {
+      console.warn(`Missing populated data for request ID: ${req._id}`);
+    }
+
+    const stationName =
+      stationData?.stationName?.[targetLang] ||
+      stationData?.stationName?.en ||
+      "N/A";
 
     const supplierName =
       supplierData?.supplierName?.[targetLang] ||
-      supplierData?.supplierName?.en;
+      supplierData?.supplierName?.en ||
+      "N/A";
+
     const supplierAddress =
       supplierData?.supplierAddress?.[targetLang] ||
-      supplierData?.supplierAddress?.en;
+      supplierData?.supplierAddress?.en ||
+      "N/A";
 
     return {
       _id: req._id,
@@ -376,12 +391,12 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
       status: translatedStatuses[req.status] || req.status,
       stationName,
       supplierName,
-      supplierImage: supplierData.supplierImage,
-      phone: supplierData?.phone,
-      supplierWhatsAppLink: supplierData?.supplierWhatsAppLink,
+      supplierImage: supplierData?.supplierImage || null,
+      phone: supplierData?.phone || null,
+      supplierWhatsAppLink: supplierData?.supplierWhatsAppLink || null,
       supplierAddress,
-      swiftCode: supplierData?.swiftCode,
-      IBAN: supplierData?.IBAN,
+      swiftCode: supplierData?.swiftCode || null,
+      IBAN: supplierData?.IBAN || null,
       carImage: req.carImage,
       receiptImage: req.receiptImage,
       safetyImage: req.safetyImage,
@@ -400,6 +415,7 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
     result: formattedRequests,
   });
 });
+
 //====================================================================================================================//
 //get sp supplier request
 export const getSpReq = asyncHandler(async (req, res, next) => {
@@ -557,7 +573,7 @@ export const sendToSupplier = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 // Send to station manager with totalCost calculation
 export const sendToStation = asyncHandler(async (req, res, next) => {
-  const { reqId, paymentMethod, totalLiters, pricePerLiter,status } = req.body;
+  const { reqId, paymentMethod, totalLiters, pricePerLiter, status } = req.body;
 
   // Build update object
   const updateData = {
@@ -566,18 +582,18 @@ export const sendToStation = asyncHandler(async (req, res, next) => {
     pricePerLiter,
     status,
   };
-if (req.body.status!= "Review underway") {
-  return next(
-    new Error("Status should be 'Review underway'", { cause: 400 })
-  );
-}
+  if (req.body.status != "Review underway") {
+    return next(
+      new Error("Status should be 'Review underway'", { cause: 400 })
+    );
+  }
   // Manually calculate totalCost if both values are present
   if (totalLiters != null && pricePerLiter != null) {
     updateData.totalCost = totalLiters * pricePerLiter;
   }
 
   const supplierReq = await suppliesRequestModel.findOneAndUpdate(
-    {_id:reqId},
+    { _id: reqId },
     updateData,
     { new: true }
   );
