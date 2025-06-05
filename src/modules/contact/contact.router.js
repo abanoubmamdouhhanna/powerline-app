@@ -12,7 +12,6 @@ const router = Router();
 //search contacts
 router.post(
   "/searchContacts",
-
   auth(["employee"]),
   isValid(searchContactsSchema),
   contactController.searchContacts
@@ -21,7 +20,6 @@ router.post(
 //get all contacts
 router.get(
   "/getAllContacts",
-
   auth(["employee"]),
   contactController.getAllContacts
 );

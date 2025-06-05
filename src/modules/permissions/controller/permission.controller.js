@@ -119,7 +119,7 @@ export const assignPermissionToUsers = asyncHandler(async (req, res) => {
   });
 });
 //====================================================================================================================//
-//get permission by id
+//get permission
 export const getAllPermissions = asyncHandler(async (req, res, next) => {
   const language = req.language || "en";
 

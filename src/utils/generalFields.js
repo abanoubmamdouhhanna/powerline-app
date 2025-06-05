@@ -145,7 +145,7 @@ export const generalFields = (lang = "en") => ({
     authorization: joi
       .string()
       .required()
-      .regex(/^([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_=]+)\.([a-zA-Z0-9_\-\+\/=]*)/)
+      .regex(/^([a-zA-Z0-9\-_]+)\.([a-zA-Z0-9\-_]+)\.([a-zA-Z0-9\-_]+)$/)
       .messages({
         "any.required": getMessage("auth Header Required", lang),
         "string.empty": getMessage("auth Header Required", lang),

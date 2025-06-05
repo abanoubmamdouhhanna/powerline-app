@@ -5,9 +5,10 @@ import { ValidationErrors } from "../../../../languages/validationErrorTranslati
 const getMessage = (key, lang = "en") => {
   return ValidationErrors[key]?.[lang] || ValidationErrors[key]?.en || key;
 };
-
+//=========================== HEADERS SCHEMA ================================//
 export const headersSchema = (lang = "en") => generalFields(lang).headers;
-//====================================================================================================================//
+
+//=========================== DOCUMENTS VALIDATION SCHEMA ================================//
 function generateDocumentValidationSchema(lang) {
   return joi
     .array()
@@ -33,7 +34,8 @@ function generateDocumentValidationSchema(lang) {
       "array.max": getMessage("DOCUMENTS_MAX_LIMIT", lang),
     });
 }
-//====================================================================================================================//
+
+//=========================== CREATE EMPLOYEE SCHEMA ================================//
 export const createEmployeeSchema = (lang = "en") =>
   joi
     .object({
@@ -139,6 +141,7 @@ export const createEmployeeSchema = (lang = "en") =>
           "string.empty": getMessage("TIME_WORK_REQUIRED", lang),
           "any.required": getMessage("TIME_WORK_REQUIRED", lang),
         }),
+
       workFor: joi
         .string()
         .required()
@@ -147,6 +150,7 @@ export const createEmployeeSchema = (lang = "en") =>
           "string.empty": getMessage("WORK-FOR_REQUIRED", lang),
           "any.required": getMessage("WORK-FOR_REQUIRED", lang),
         }),
+
       joiningDate: joi
         .date()
         .required()
@@ -175,12 +179,7 @@ export const createEmployeeSchema = (lang = "en") =>
 
       documents: generateDocumentValidationSchema(lang),
 
-      file: joi
-        .any()
-        .optional()
-        .messages({
-          "any.required": getMessage("FILE_REQUIRED", lang),
-        }),
+      file: generalFields(lang).file.required(),
     })
     .required()
     .messages({
@@ -188,7 +187,7 @@ export const createEmployeeSchema = (lang = "en") =>
       "object.required": getMessage("EMPLOYEE_DATA_REQUIRED", lang),
     });
 
-//====================================================================================================================//
+//=========================== LOGIN SCHEMA ================================//
 export const logInSchema = (lang = "en") =>
   joi
     .object({
@@ -196,23 +195,26 @@ export const logInSchema = (lang = "en") =>
 
       password: generalFields(lang).password.required(),
 
-      fcmToken: joi.string().required().messages({
-        "string.base": getMessage("FCM_TOKEN_STRING", lang),
-        "string.empty": getMessage("FCM_TOKEN_REQUIRED", lang),
-        "any.required": getMessage("FCM_TOKEN_REQUIRED", lang),
-      }),
+      fcmToken: joi
+        .string()
+        .required()
+        .messages({
+          "string.base": getMessage("FCM_TOKEN_STRING", lang),
+          "string.empty": getMessage("FCM_TOKEN_REQUIRED", lang),
+          "any.required": getMessage("FCM_TOKEN_REQUIRED", lang),
+        }),
     })
     .required()
     .messages({
       "object.base": getMessage("INVALID_LOGIN_DATA", lang),
       "object.required": getMessage("LOGIN_DATA_REQUIRED", lang),
     });
-//====================================================================================================================//
-// Update Employee Schema
+
+//=========================== UPDATE EMPLOYEE SCHEMA ================================//
 export const updateEmployeeSchema = (lang = "en") =>
   joi
     .object({
-      employeeId:generalFields(lang).id,
+      employeeId: generalFields(lang).id,
 
       name: generalFields(lang).name.optional().trim(),
 
@@ -331,14 +333,50 @@ export const updateEmployeeSchema = (lang = "en") =>
           "date.greater": getMessage("RESIDENCE_EXPIRY_FUTURE", lang),
         }),
 
-      file: joi
-        .any()
-        .optional()
-        .messages({
-          "any.required": getMessage("FILE_REQUIRED", lang),
-        }),
+      file: generalFields(lang).file,
     })
     .optional()
     .messages({
       "object.base": getMessage("INVALID_EMPLOYEE_DATA", lang),
     });
+
+//=========================== DELETE DOCUMENT SCHEMA ================================//
+export const deleteDocumentSchema = (lang = "en") =>
+  joi
+    .object({
+      docId: generalFields(lang).id,
+    })
+    .required()
+    .messages({
+      "object.base": getMessage("INVALID_DOCUMENT_ID", lang),
+      "object.required": getMessage("DOCUMENT_ID_REQUIRED", lang),
+    });
+
+//=========================== EMPLOYEE ID SCHEMA ================================//
+export const idEmployeeSchema = (lang = "en") =>
+  joi
+    .object({
+      employeeId: generalFields(lang).id,
+    })
+    .required()
+    .messages({
+      "object.base": getMessage("INVALID_EMPLOYEE_ID", lang),
+      "object.required": getMessage("EMPLOYEE_ID_REQUIRED", lang),
+    });
+
+//=========================== SINGLE DOCUMENT VALIDATION SCHEMA ================================//
+export const documentValidationSchema = (lang = "en") =>
+  joi
+    .object({
+      title: joi.string().messages({
+        "string.base": getMessage("DOCUMENT_TITLE_STRING", lang),
+        "string.empty": getMessage("DOCUMENT_TITLE_REQUIRED", lang),
+      }),
+      start: joi.date().messages({
+        "date.base": getMessage("DOCUMENT_START_DATE_INVALID", lang),
+      }),
+      end: joi.date().messages({
+        "date.base": getMessage("DOCUMENT_END_DATE_INVALID", lang),
+      }),
+    })
+    .required();

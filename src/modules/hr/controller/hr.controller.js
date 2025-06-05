@@ -157,7 +157,7 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
 //log in
 
 export const logIn = asyncHandler(async (req, res, next) => {
-  const { phoneOrEmail, password, fcmToken} = req.body;
+  const { phoneOrEmail, password, fcmToken } = req.body;
 
   // Validate input data
   if (!password || !phoneOrEmail) {
@@ -276,11 +276,13 @@ export const logOut = asyncHandler(async (req, res, next) => {
 //update employee
 export const updateEmployee = asyncHandler(async (req, res, next) => {
   const { employeeId } = req.params;
-  const language = req.language || 'en'; // Default to English if language not specified
+  const language = req.language || "en"; // Default to English if language not specified
 
   const existingEmployee = await userModel.findById(employeeId);
   if (!existingEmployee) {
-    return next(new Error(getTranslation("Employee not found", language), { cause: 404 }));
+    return next(
+      new Error(getTranslation("Employee not found", language), { cause: 404 })
+    );
   }
 
   const {
@@ -317,9 +319,17 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
   ]);
 
   if (existingEmail)
-    return next(new Error(getTranslation("Email already exists", language), { cause: 409 }));
+    return next(
+      new Error(getTranslation("Email already exists", language), {
+        cause: 409,
+      })
+    );
   if (existingPhone)
-    return next(new Error(getTranslation("Phone number already exists", language), { cause: 409 }));
+    return next(
+      new Error(getTranslation("Phone number already exists", language), {
+        cause: 409,
+      })
+    );
 
   // Translate name and address if provided
   const translatedName = name
@@ -331,9 +341,7 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
   const translatedNationality = nationality
     ? await translateMultiLang(nationality)
     : undefined;
-  const translatedCity = city 
-    ? await translateMultiLang(city)
-    : undefined;
+  const translatedCity = city ? await translateMultiLang(city) : undefined;
 
   // Update profile pic if provided
   const profilePicFile = uploadedFiles?.profilePic?.[0];
@@ -366,7 +374,8 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
     timeWork: timeWork || existingEmployee.timeWork,
     joiningDate: joiningDate || existingEmployee.joiningDate,
     contractDuration: contractDuration || existingEmployee.contractDuration,
-    residenceExpiryDate: residenceExpiryDate || existingEmployee.residenceExpiryDate,
+    residenceExpiryDate:
+      residenceExpiryDate || existingEmployee.residenceExpiryDate,
   };
 
   Object.entries(updatedFields).forEach(([key, value]) => {
@@ -399,12 +408,12 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
     joiningDate: existingEmployee.joiningDate,
     contractDuration: existingEmployee.contractDuration,
     residenceExpiryDate: existingEmployee.residenceExpiryDate,
-    documents: existingEmployee.documents?.map(doc => ({
+    documents: existingEmployee.documents?.map((doc) => ({
       title: doc.title?.[language],
       files: doc.files,
       start: doc.start,
       end: doc.end,
-      _id: doc._id
+      _id: doc._id,
     })),
     role: existingEmployee.role,
     status: existingEmployee.status,
@@ -413,7 +422,7 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
     isDeleted: existingEmployee.isDeleted,
     createdAt: existingEmployee.createdAt,
     updatedAt: existingEmployee.updatedAt,
-    employeeCode: existingEmployee.employeeCode
+    employeeCode: existingEmployee.employeeCode,
   };
 
   return res.status(200).json({
@@ -675,21 +684,21 @@ export const getSpecificEmployee = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //user attendance
 export const userAttendance = asyncHandler(async (req, res, next) => {
-  const { userId } = req.params;
-  const user = await userModel.findById(userId);
+  const { employeeId } = req.params;
+  const user = await userModel.findById(employeeId);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
 
   const attendance = await attendanceModel.find(
-    { user: userId },
+    { user: employeeId },
     "date checkIn checkOut workingHours status"
   );
 
   const statusColorMap = {
     "On Time": "green",
-    "Late": "red",
-    "Absent": "warning",
+    Late: "red",
+    Absent: "warning",
     "Day Off": "blue",
   };
 
@@ -708,18 +717,18 @@ export const userAttendance = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //get job tasks
 export const getJobTasks = asyncHandler(async (req, res, next) => {
-  const { userId } = req.params;
+  const { employeeId } = req.params;
   const targetLang = req.language || "en"; // Fallback to English
 
   // 1. Find user
-  const user = await userModel.findById(userId);
+  const user = await userModel.findById(employeeId);
   if (!user) {
     return next(new Error("User not found", { cause: 404 }));
   }
 
   // 2. Fetch cleaning tasks with createdAt
   const cleaningTasksRaw = await cleaningTaskModel.find(
-    { user: userId },
+    { user: employeeId },
     "subTask date time location employeeName cleaningImages createdAt"
   );
 
@@ -747,7 +756,7 @@ export const getJobTasks = asyncHandler(async (req, res, next) => {
   // 3. Fetch inventory tasks with createdAt
   const inventoryTasksRaw = await inventoryTaskModel
     .find(
-      { user: userId },
+      { user: employeeId },
       "subTask date time location employeeName inventoryImages pumps createdAt"
     )
     .populate({
