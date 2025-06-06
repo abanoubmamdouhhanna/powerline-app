@@ -10,7 +10,7 @@ import {
   getTaskbyUserIDSchema,
   headersSchema,
   updateTaskSchema,
-} from "./controller/todo.validatio.js";
+} from "./controller/todo.validation.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
 
 const router = Router();
