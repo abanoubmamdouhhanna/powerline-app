@@ -451,6 +451,17 @@ export const addStationStoreSchema = (lang = "en") =>
           "date.base": getMessage("RESIDENCE_EXPIRY_DATE_INVALID", lang),
           "any.required": getMessage("RESIDENCE_EXPIRY_DATE_REQUIRED", lang),
         }),
+        file: joi
+        .object()
+        .pattern(
+          joi.string(),
+          joi.array().items(generalFields(lang).fileMetaSchema).min(1)
+        )
+        .required()
+        .messages({
+          "object.base": getMessage("FILES_INVALID", lang),
+          "any.required": getMessage("FILES_REQUIRED", lang),
+        }),
     })
     .required();
 
@@ -476,7 +487,6 @@ export const addGasolinePriceSchema = (lang = "en") =>
 export const updateGasolinePriceSchema = (lang = "en") =>
   joi
     .object({
-      station: generalFields(lang).id,
       priceId: generalFields(lang).id,
       redPrice: priceSchema,
       greenPrice: priceSchema,

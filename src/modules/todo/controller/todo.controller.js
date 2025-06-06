@@ -337,16 +337,29 @@ export const getTaskbyId = asyncHandler(async (req, res, next) => {
 //change status
 export const changeStatus = asyncHandler(async (req, res, next) => {
   const { status, taskId } = req.body;
+
+  if (!status || !taskId) {
+
+    return next(new Error("Status and taskId are required",{ 
+      cause: 400 
+    }))  }
+
   const updateTask = await toDoModel.findOneAndUpdate(
-    { _id: taskId, user: req.user._id },
+    { _id: taskId, createdBy: req.user._id },
     { status },
     { new: true }
   );
+
+  if (!updateTask) {
+    return next(new Error("Task not found or unauthorized",{ 
+      cause: 404 
+    }))  }
   return res.status(200).json({
     message: "Task status updated successfully",
     result: updateTask,
   });
 });
+
 //====================================================================================================================//
 //gat all tasks
 export const getAllTasks = asyncHandler(async (req, res, next) => {

@@ -26,7 +26,7 @@ export const createPermissionSchema = (lang = "en") =>
     }),
     permissions: joi
       .object()
-      .pattern(joi.string().valid(...validPermissionKeys), joi.string())
+      .pattern(joi.string().valid(...validPermissionKeys), joi.boolean())
       .required()
       .messages({
         "object.base": getMessage("permissions_must_be_object", lang),
@@ -51,13 +51,16 @@ export const assignPermissionSchema = (lang = "en") =>
 //=========================== UPDATE PERMISSION ================================//
 export const updatePermissionSchema = (lang = "en") =>
   joi.object({
+    id: generalFields(lang).id.required().messages({
+      "any.required": getMessage("id_is_required", lang),
+    }),
     name: joi.string().trim().optional().messages({
       "string.base": getMessage("name_must_be_string", lang),
       "string.empty": getMessage("name_is_required", lang),
     }),
     permissions: joi
       .object()
-      .pattern(joi.string().valid(...validPermissionKeys), joi.string())
+      .pattern(joi.string().valid(...validPermissionKeys), joi.boolean())
       .optional()
       .messages({
         "object.base": getMessage("permissions_must_be_object", lang),

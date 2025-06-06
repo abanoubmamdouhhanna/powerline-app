@@ -222,7 +222,6 @@ export const sendToSupplierSchema = (lang = "en") =>
 
       fuelType: joi
         .string()
-        .valid("Green", "Diesel", "Red")
         .required()
         .trim()
         .messages({
@@ -350,14 +349,16 @@ export const reviewRequestSchema = (lang = "en") =>
           "any.only": getMessage("MATCHING_SAFETY_OPTIONS", lang),
           "any.required": getMessage("MATCHING_SAFETY_REQUIRED", lang),
         }),
-
-      files: joi
-        .object({
-          carImage: joi.array().items(generalFields(lang).file).optional(),
-          specsImage: joi.array().items(generalFields(lang).file).optional(),
-          safetyImage: joi.array().items(generalFields(lang).file).optional(),
-          receiptImage: joi.array().items(generalFields(lang).file).optional(),
-        })
-        .optional(),
+      file: joi
+        .object()
+        .pattern(
+          joi.string(),
+          joi.array().items(generalFields(lang).fileMetaSchema).min(1)
+        )
+        .required()
+        .messages({
+          "object.base": getMessage("FILES_INVALID", lang),
+          "any.required": getMessage("FILES_REQUIRED", lang),
+        }),
     })
     .required();

@@ -143,6 +143,13 @@ export const changeStatusSchema = (lang = "en") =>
 export const updateTaskSchema = (lang = "en") =>
   joi
     .object({
+      taskId: generalFields(lang)
+      .id.required()
+      .messages({
+        "string.base": getMessage("TASK_ID_INVALID", lang),
+        "string.empty": getMessage("TASK_ID_REQUIRED", lang),
+        "any.required": getMessage("TASK_ID_REQUIRED", lang),
+      }),
       // Optional fields (all fields are optional for update)
       taskName: joi
         .string()
@@ -268,7 +275,7 @@ export const deleteTaskDocumentSchema = (lang = "en") =>
     .required();
 
 //=========================== ADD TASK DOCUMENT SCHEMA ================================//
-export const addTaskDocumentSchema = (lang = "en", getMessage) =>
+export const addTaskDocumentSchema = (lang = "en") =>
   joi.object({
     taskId: generalFields(lang)
       .id.required()

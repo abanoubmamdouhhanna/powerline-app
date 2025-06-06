@@ -27,7 +27,6 @@ function formatNotificationTime(date) {
   }
 }
 
-
 //create notification
 export const createNotification = asyncHandler(async (req, res, next) => {
   const { employeeId, message, description } = req.body;
@@ -43,7 +42,12 @@ export const createNotification = asyncHandler(async (req, res, next) => {
     description: translatedDescription,
   });
 
-  sendNotification(employeeId, translatedMessage, translatedDescription,req.language);
+  sendNotification(
+    employeeId,
+    translatedMessage,
+    translatedDescription,
+    req.language
+  );
   res
     .status(200)
     .json({ message: "Notification Created", data: createNotification });
@@ -55,7 +59,7 @@ export const getAllNotifications = asyncHandler(async (req, res, next) => {
   const language = req.language || "en";
 
   const apiFeatures = new ApiFeatures(
-    notificationModel.find({ employee: req.user._id }).lean(),  // filter by user
+    notificationModel.find({ employee: req.user._id }).lean(), // filter by user
     req.query
   )
     .filter()
@@ -69,9 +73,7 @@ export const getAllNotifications = asyncHandler(async (req, res, next) => {
   const notifications = await apiFeatures.mongooseQuery;
 
   // Find unread notifications to update
-  const unreadIds = notifications
-    .filter((n) => !n.isRead)
-    .map((n) => n._id);
+  const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n._id);
 
   if (unreadIds.length > 0) {
     await notificationModel.updateMany(
@@ -84,7 +86,9 @@ export const getAllNotifications = asyncHandler(async (req, res, next) => {
     const description =
       notification.description?.[language] ||
       notification.description?.en ||
-      (notification.description ? Object.values(notification.description)[0] : "");
+      (notification.description
+        ? Object.values(notification.description)[0]
+        : "");
 
     const message =
       notification.message?.[language] ||

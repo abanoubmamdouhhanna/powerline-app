@@ -98,7 +98,7 @@ router.get(
 
 //get job tasks
 router.get(
-  "/getJobTasks/:userId",
+  "/getJobTasks/:employeeId",
   isValid(headersSchema, true),
   auth(["employee"]),
   isValid(idEmployeeSchema),

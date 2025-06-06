@@ -33,7 +33,17 @@ export const cleaningJobTaskSchema = (lang = "en") =>
           "string.base": getMessage("SUB_TASK_INVALID", lang),
         }),
 
-      file: generalFields(lang).file,
+      file: joi
+        .object()
+        .pattern(
+          joi.string(),
+          joi.array().items(generalFields(lang).fileMetaSchema).min(1)
+        )
+        .required()
+        .messages({
+          "object.base": getMessage("FILES_INVALID", lang),
+          "any.required": getMessage("FILES_REQUIRED", lang),
+        }),
     })
     .required();
 
@@ -100,6 +110,16 @@ export const inventoryJobTaskSchema = (lang = "en") =>
           "string.base": getMessage("PUMPS_MUST_BE_STRING", lang),
         }),
 
-      file: generalFields(lang).file,
+      file: joi
+        .object()
+        .pattern(
+          joi.string(),
+          joi.array().items(generalFields(lang).fileMetaSchema).min(1)
+        )
+        .required()
+        .messages({
+          "object.base": getMessage("FILES_INVALID", lang),
+          "any.required": getMessage("FILES_REQUIRED", lang),
+        }),
     })
     .required();

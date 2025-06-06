@@ -365,6 +365,7 @@ export const deleteDocumentSchema = (lang = "en") =>
   joi
     .object({
       docId: generalFields(lang).id,
+      userId: generalFields(lang).id,
     })
     .required()
     .messages({
