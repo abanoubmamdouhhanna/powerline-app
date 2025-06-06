@@ -179,7 +179,17 @@ export const createEmployeeSchema = (lang = "en") =>
 
       documents: generateDocumentValidationSchema(lang),
 
-      file: generalFields(lang).file.required(),
+      file: joi
+        .object()
+        .pattern(
+          joi.string(),
+          joi.array().items(generalFields(lang).fileMetaSchema).min(1)
+        )
+        .required()
+        .messages({
+          "object.base": getMessage("FILES_INVALID", lang),
+          "any.required": getMessage("FILES_REQUIRED", lang),
+        }),
     })
     .required()
     .messages({
@@ -333,7 +343,17 @@ export const updateEmployeeSchema = (lang = "en") =>
           "date.greater": getMessage("RESIDENCE_EXPIRY_FUTURE", lang),
         }),
 
-      file: generalFields(lang).file,
+      file: joi
+        .object()
+        .pattern(
+          joi.string(),
+          joi.array().items(generalFields(lang).fileMetaSchema).min(1)
+        )
+        .required()
+        .messages({
+          "object.base": getMessage("FILES_INVALID", lang),
+          "any.required": getMessage("FILES_REQUIRED", lang),
+        }),
     })
     .optional()
     .messages({
@@ -368,6 +388,7 @@ export const idEmployeeSchema = (lang = "en") =>
 export const documentValidationSchema = (lang = "en") =>
   joi
     .object({
+      userId: generalFields(lang).id,
       title: joi.string().messages({
         "string.base": getMessage("DOCUMENT_TITLE_STRING", lang),
         "string.empty": getMessage("DOCUMENT_TITLE_REQUIRED", lang),
@@ -377,6 +398,17 @@ export const documentValidationSchema = (lang = "en") =>
       }),
       end: joi.date().messages({
         "date.base": getMessage("DOCUMENT_END_DATE_INVALID", lang),
+      }),
+      file: joi
+      .object()
+      .pattern(
+        joi.string(),
+        joi.array().items(generalFields(lang).fileMetaSchema).min(1)
+      )
+      .required()
+      .messages({
+        "object.base": getMessage("FILES_INVALID", lang),
+        "any.required": getMessage("FILES_REQUIRED", lang),
       }),
     })
     .required();
