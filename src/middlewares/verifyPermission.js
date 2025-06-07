@@ -47,7 +47,7 @@ export const verifyPermissions = (...requiredPermissions) => {
     if (user.role === "admin") {
       return next();
     }
-
+    
     if (user.role !== "assistant" || !user.permissions) {
       return next(
         new Error("Access denied: Insufficient permissions", { cause: 403 })
