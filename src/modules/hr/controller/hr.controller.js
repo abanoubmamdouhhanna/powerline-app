@@ -18,6 +18,7 @@ import stationModel from "../../../../DB/models/Station.model.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
 import userTokenModel from "../../../../DB/models/Firebase.model.js";
+import permissionModel from "../../../../DB/models/Permission.model.js";
 
 //create Employee
 
@@ -588,27 +589,56 @@ export const addUserDocument = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //get all employees
 export const getAllEmployees = asyncHandler(async (req, res, next) => {
-  const targetLang = req.language || "en"; // fallback to 'en' if no language is specified
+  const targetLang = req.language || "en";
 
+  // Step 1: Fetch all employees with basic fields
   const employees = await userModel.find(
-    { role: "employee" },
+    {},
     "name email imageUrl employeeCode timeWork"
   );
 
+  // Step 2: Fetch all stations (only employees + stationName)
+  const stations = await stationModel.find({}, "employees stationName").lean();
+
+  // Step 3: Fetch all permission documents (assistant list + name)
+  const permissions = await permissionModel.find({}, "assistant permissionName").lean();
+
+  // Step 4: Build response
   const translatedEmployees = await Promise.all(
     employees.map(async (emp) => {
-      const employeeName = emp.name
-        ? emp.name[targetLang] || emp.name.en
-        : "N/A";
+      const empId = emp._id.toString();
 
+      // Name Translation
+      const employeeName = emp.name ? emp.name[targetLang] || emp.name.en : "N/A";
+
+      // TimeWork Translation
       const { translatedText: employeeTimeWork } = await translateAutoDetect(
         emp.timeWork,
         req.language
       );
+
+      // Station Lookup
+      const station = stations.find((st) =>
+        st.employees.some((id) => id.toString() === empId)
+      );
+      const stationName = station
+        ? station.stationName?.[targetLang] || station.stationName?.en
+        : "N/A";
+
+      // Permissions Lookup
+      const employeePermission = permissions.find((perm) =>
+        perm.assistant.some((id) => id.toString() === empId)
+      );
+      const permissionName = employeePermission
+        ? employeePermission.permissionName?.[targetLang] || employeePermission.permissionName?.en
+        : "Employee";
+
       return {
         ...emp.toObject(),
         name: employeeName,
         timeWork: employeeTimeWork,
+        stationName,
+        permissionName,
       };
     })
   );
@@ -619,6 +649,7 @@ export const getAllEmployees = asyncHandler(async (req, res, next) => {
     result: translatedEmployees,
   });
 });
+
 //====================================================================================================================//
 //get specific employee
 export const getSpecificEmployee = asyncHandler(async (req, res, next) => {
