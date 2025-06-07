@@ -656,22 +656,35 @@ export const getSpecificEmployee = asyncHandler(async (req, res, next) => {
   const targetLang = req.language || "en";
   const { employeeId } = req.params;
 
-  const employee = await userModel.findById(employeeId);
+  const employee = await userModel
+    .findById(employeeId)
+    .populate("station", "stationName");
+
   if (!employee) {
     return next(new Error("Employee not found", { cause: 404 }));
   }
 
-  // Translate all multilingual fields
-  const translatedEmployee = {
-    ...employee.toObject(),
+  // Translate stationName
+  const stationName =
+    employee.station?.stationName?.[targetLang] ||
+    employee.station?.stationName?.en ||
+    Object.values(employee.station?.stationName || {})[0] ||
+    "N/A";
 
+  // Destructure to remove `station`
+  const {
+    station, // exclude
+    ...employeeData
+  } = employee.toObject();
+
+  const translatedEmployee = {
+    ...employeeData,
     name: employee.name?.[targetLang] || employee.name?.en || "N/A",
     address: employee.address?.[targetLang] || employee.address?.en || "N/A",
     city: employee.city?.[targetLang] || employee.city?.en || "N/A",
     nationality:
       employee.nationality?.[targetLang] || employee.nationality?.en || "N/A",
-
-    // Translate documents titles
+    stationName, // only the translated station name
     documents:
       employee.documents?.map((doc) => ({
         ...doc.toObject(),
@@ -683,29 +696,29 @@ export const getSpecificEmployee = asyncHandler(async (req, res, next) => {
   };
 
   if (employee.timeWork) {
-    const { translatedText: timeWorkTranslated } = await translateAutoDetect(
+    const { translatedText } = await translateAutoDetect(
       employee.timeWork,
       targetLang
     );
-    translatedEmployee.timeWork = timeWorkTranslated;
+    translatedEmployee.timeWork = translatedText;
   }
 
-  // Translate workFor ("stations" or "company")
   if (employee.workFor) {
-    const { translatedText: workForTranslated } = await translateAutoDetect(
+    const { translatedText } = await translateAutoDetect(
       employee.workFor,
       targetLang
     );
-    translatedEmployee.workFor = workForTranslated;
+    translatedEmployee.workFor = translatedText;
   }
 
   if (employee.gender) {
-    const { translatedText: genderTranslated } = await translateAutoDetect(
+    const { translatedText } = await translateAutoDetect(
       employee.gender,
       targetLang
     );
-    translatedEmployee.gender = genderTranslated;
+    translatedEmployee.gender = translatedText;
   }
+
   return res.status(200).json({
     status: "success",
     result: translatedEmployee,
