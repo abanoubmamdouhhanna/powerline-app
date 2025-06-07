@@ -48,7 +48,7 @@ router.patch(
   isValid(headersSchema, true),
   auth(["employee"]),
   fileUpload(5, allowedTypesMap).single("storageImage"),
-  // isValid(updateStorageSchema),
+  isValid(updateStorageSchema),
   storageController.updateStorage
 );
 
