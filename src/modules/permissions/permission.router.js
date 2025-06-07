@@ -16,7 +16,7 @@ router.post(
   "/createPermission",
   isValid(headersSchema, true),
   auth(["employee"]),
-  isValid(createPermissionSchema),
+  // isValid(createPermissionSchema),
   permissionController.createPermission
 );
 
