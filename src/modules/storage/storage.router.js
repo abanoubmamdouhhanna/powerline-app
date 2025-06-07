@@ -13,13 +13,15 @@ import {
   storageIdSchema,
   updateStorageSchema,
 } from "./controller/storage.validation.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 //create storage
 router.post(
   "/createStorage",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStorages"),
   fileUpload(5, allowedTypesMap).single("storageImage"),
   isValid(createStorageSchema),
   storageController.createStorage
@@ -29,7 +31,8 @@ router.post(
 router.get(
   "/getAllStorages",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStorages"),
   storageController.getAllStorages
 );
 
@@ -37,7 +40,8 @@ router.get(
 router.get(
   "/getStorageById/:storageId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStorages"),
   isValid(storageIdSchema),
   storageController.getStorageById
 );
@@ -46,7 +50,8 @@ router.get(
 router.patch(
   "/updateStorage/:storageId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStorages"),
   fileUpload(5, allowedTypesMap).single("storageImage"),
   isValid(updateStorageSchema),
   storageController.updateStorage
@@ -56,7 +61,8 @@ router.patch(
 router.delete(
   "/deleteStorage/:storageId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStorages"),
   isValid(storageIdSchema),
   storageController.deleteStorage
 );

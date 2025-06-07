@@ -30,7 +30,7 @@ router.post(
 router.get(
   "/profile",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   employeeController.profile
 );
 export default router;

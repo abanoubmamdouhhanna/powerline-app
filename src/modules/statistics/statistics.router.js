@@ -3,13 +3,15 @@ import * as statisticsController from "./controller/statistics.controller.js";
 import { auth } from "../../middlewares/auth.middleware.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
 import { headersSchema } from "./controller/statistics.validation.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 //tasks statistics
 router.get(
   "/taskstats",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageViewStats"),
   statisticsController.taskstats
 );
 
@@ -17,7 +19,8 @@ router.get(
 router.get(
   "/employeeStats",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageViewStats"),
   statisticsController.employeeStats
 );
 
@@ -25,14 +28,16 @@ router.get(
 router.get(
   "/stationsStats",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageViewStats"),
   statisticsController.stationsStats
 );
 //overview statistics
 router.get(
   "/overviewStats",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageViewStats"),
   statisticsController.overviewStats
 );
 

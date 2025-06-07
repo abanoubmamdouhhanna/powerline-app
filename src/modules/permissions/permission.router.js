@@ -9,13 +9,15 @@ import {
   updatePermissionSchema,
 } from "./controller/permissions.validation.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 //create permission
 router.post(
   "/createPermission",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("managePermissions"),
   isValid(createPermissionSchema),
   permissionController.createPermission
 );
@@ -24,7 +26,8 @@ router.post(
 router.post(
   "/assignPermissionToUsers",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("managePermissions"),
   isValid(assignPermissionSchema),
   permissionController.assignPermissionToUsers
 );
@@ -33,7 +36,8 @@ router.post(
 router.get(
   "/getAllPermissions",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("managePermissions"),
   permissionController.getAllPermissions
 );
 
@@ -41,7 +45,8 @@ router.get(
 router.get(
   "/getPermissionById/:id",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("managePermissions"),
   isValid(permissionIdSchema),
   permissionController.getPermissionById
 );
@@ -49,7 +54,8 @@ router.get(
 router.patch(
   "/updatePermission/:id",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("managePermissions"),
   isValid(updatePermissionSchema),
   permissionController.updatePermission
 );
@@ -58,7 +64,8 @@ router.patch(
 router.delete(
   "/deletePermission/:id",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("managePermissions"),
   isValid(permissionIdSchema),
   permissionController.deletePermission
 );

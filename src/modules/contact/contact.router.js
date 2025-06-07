@@ -12,7 +12,7 @@ const router = Router();
 //search contacts
 router.post(
   "/searchContacts",
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   isValid(searchContactsSchema),
   contactController.searchContacts
 );
@@ -20,14 +20,14 @@ router.post(
 //get all contacts
 router.get(
   "/getAllContacts",
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   contactController.getAllContacts
 );
 
 //get dm list unified
 router.get(
   "/getDMListUnified",
-  auth(["employee","admin","assistant"]),
+  auth(["admin", "employee", "assistant"]),
   contactController.getDMListUnified
 );
 export default router;

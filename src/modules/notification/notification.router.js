@@ -3,13 +3,15 @@ import * as notificationController from "./controller/notification.controller.js
 import { auth } from "../../middlewares/auth.middleware.js";
 import { createNotificationSchema, headersSchema, notificationId } from "./controller/notification.validation.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 //create notification
 router.post(
   "/createNotification",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("managePushNotifications"),
   isValid(createNotificationSchema),
   notificationController.createNotification
 );
@@ -18,7 +20,7 @@ router.post(
 router.get(
   "/getAllNotifications",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   notificationController.getAllNotifications
 );
 
@@ -26,7 +28,7 @@ router.get(
 router.get(
   "/getNotificationById/:id",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   isValid(notificationId),
   notificationController.getNotificationById
 );
@@ -35,7 +37,7 @@ router.get(
 router.get(
   "/unreadCount",
   isValid(headersSchema, true),
-  auth(["employee"]), 
+  auth(["admin", "employee", "assistant"]), 
   notificationController.countUnreadNotifications
 );
 
@@ -43,7 +45,7 @@ router.get(
 router.delete(
   "/deleteNotification/:id",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   isValid(notificationId),
   notificationController.deleteNotification
 );

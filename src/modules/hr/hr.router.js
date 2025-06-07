@@ -12,6 +12,7 @@ import {
   logInSchema,
   updateEmployeeSchema,
 } from "./controller/hr.validation.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 
@@ -19,7 +20,8 @@ const router = Router();
 router.post(
   "/createEmployee",
   isValid(headersSchema, true),
-  auth(["admin", "employee", "assistant"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageEmployees"),
   flexibleDocumentUpload(5, 25),
   isValid(createEmployeeSchema),
   hrController.createEmployee
@@ -39,7 +41,8 @@ router.patch(
 router.patch(
   "/updateEmployee/:employeeId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageEmployees"),
   flexibleDocumentUpload(5, 1),
   isValid(updateEmployeeSchema),
   hrController.updateEmployee
@@ -48,7 +51,8 @@ router.patch(
 router.delete(
   "/deleteEmployee/:employeeId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageEmployees"),
   isValid(idEmployeeSchema),
   hrController.deleteEmployee
 );
@@ -57,7 +61,8 @@ router.delete(
 router.delete(
   "/deleteDocument",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageEmployees"),
   isValid(deleteDocumentSchema),
   hrController.deleteDocument
 );
@@ -66,7 +71,8 @@ router.delete(
 router.post(
   "/addUserDocument",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageEmployees"),
   flexibleDocumentUpload(5, 5),
   isValid(documentValidationSchema),
   hrController.addUserDocument
@@ -76,14 +82,22 @@ router.post(
 router.get(
   "/getAllEmployees",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions(
+    "manageTODO",
+    "manageEmployees",
+    "manageChats",
+    "managePushNotifications",
+    "managePermissions"
+  ),
   hrController.getAllEmployees
 );
 //get specific employee
 router.get(
   "/getSpecificEmployee/:employeeId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageEmployees"),
   isValid(idEmployeeSchema),
   hrController.getSpecificEmployee
 );
@@ -91,7 +105,8 @@ router.get(
 router.get(
   "/userAttendance/:employeeId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageAttendace", "manageEmployees"),
   isValid(idEmployeeSchema),
   hrController.userAttendance
 );
@@ -100,7 +115,8 @@ router.get(
 router.get(
   "/getJobTasks/:employeeId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageJobTasks", "manageEmployees"),
   isValid(idEmployeeSchema),
   hrController.getJobTasks
 );

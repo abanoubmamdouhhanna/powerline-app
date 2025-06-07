@@ -9,6 +9,7 @@ import {
   maintenanceRequestSchema,
   maintenanceUpdateSchema,
 } from "./controller/maintenancevalidation.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 //create maintenance request
@@ -39,7 +40,8 @@ router.put(
 router.get(
   "/maintenanceRequest",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageMaintenances"),
   maintenanceController.getAllMaintenanceRequests
 );
 
@@ -47,7 +49,8 @@ router.get(
 router.get(
   "/maintenanceRequest/:maintenanceId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageMaintenances"),
   isValid(maintenanceIdSchema),
   maintenanceController.getMaintenanceRequestById
 );
@@ -63,7 +66,8 @@ router.get(
 router.delete(
   "/maintenanceRequest/:maintenanceId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageMaintenances"),
   isValid(maintenanceIdSchema),
   maintenanceController.deleteMaintenanceRequest
 );

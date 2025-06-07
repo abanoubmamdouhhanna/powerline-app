@@ -14,13 +14,15 @@ import {
   updateSupplierSchema,
 } from "./controller/supplier.validation.js";
 import { allowedTypesMap, fileUpload } from "../../utils/multerCloudinary.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 //add supplier
 router.post(
   "/addSupplier",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   fileUpload(5, allowedTypesMap).single("supplierImage"),
   isValid(addSupplierSchema),
   supplierController.addSupplier
@@ -30,7 +32,8 @@ router.post(
 router.patch(
   "/updateSupplier/:supplierId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   fileUpload(5, allowedTypesMap).single("supplierImage"),
   isValid(updateSupplierSchema),
   supplierController.updateSupplier
@@ -40,7 +43,8 @@ router.patch(
 router.get(
   "/getAllSuppliers",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageStations", "manageSuppliers"),
   supplierController.getAllSuppliers
 );
 
@@ -48,7 +52,8 @@ router.get(
 router.get(
   "/getSpSupplier/:supplierId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   isValid(supplierIdSchema),
   supplierController.getSpSupplier
 );
@@ -57,7 +62,8 @@ router.get(
 router.delete(
   "/deleteSupplier/:supplierId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   isValid(supplierIdSchema),
   supplierController.deleteSupplier
 );
@@ -75,7 +81,8 @@ router.post(
 router.get(
   "/getALLSupplierReq",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   supplierController.getALLSupplierReq
 );
 
@@ -83,7 +90,8 @@ router.get(
 router.get(
   "/getSpReq/:reqId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   isValid(reqIdSchema),
   supplierController.getSpReq
 );
@@ -91,7 +99,8 @@ router.get(
 router.post(
   "/sendToSupplier",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   isValid(sendToSupplierSchema),
   supplierController.sendToSupplier
 );
@@ -99,7 +108,8 @@ router.post(
 router.post(
   "/sendToStation",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   isValid(sendToStationSchema),
   supplierController.sendToStation
 );
@@ -130,7 +140,8 @@ router.post(
 router.patch(
   "/completeReq/:reqId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   isValid(reqIdSchema),
   supplierController.completeReq
 );
@@ -138,7 +149,8 @@ router.patch(
 router.delete(
   "/deleteReq/:reqId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageSuppliers"),
   isValid(reqIdSchema),
   supplierController.deleteReq
 );

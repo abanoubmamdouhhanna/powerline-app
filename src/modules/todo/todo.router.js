@@ -12,13 +12,15 @@ import {
   updateTaskSchema,
 } from "./controller/todo.validation.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 //create task
 router.post(
   "/createTask",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageTODO"),
   flexibleDocumentUpload(5, 15),
   isValid(createTaskSchema),
   todoController.createTask
@@ -36,7 +38,8 @@ router.get(
 router.get(
   "/getTaskbyId/:userId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageTODO","manageEmployees"),
   isValid(getTaskbyUserIDSchema),
   todoController.getTaskbyId
 );
@@ -54,7 +57,8 @@ router.patch(
 router.get(
   "/allTasks",
   isValid(headersSchema, true),
-  auth(["assistant", "employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageTODO"),
   todoController.getAllTasks
 );
 
@@ -62,7 +66,8 @@ router.get(
 router.patch(
   "/updateTask/:taskId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageTODO"),
   isValid(updateTaskSchema),
   todoController.updateTask
 );
@@ -71,7 +76,8 @@ router.patch(
 router.delete(
   "/deleteTask/:taskId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageTODO"),
   isValid(deleteTaskSchema),
   todoController.deleteTask
 );
@@ -80,7 +86,8 @@ router.delete(
 router.delete(
   "/deleteTaskDocument",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageTODO"),
   todoController.deleteTaskDocument
 );
 
@@ -88,7 +95,8 @@ router.delete(
 router.post(
   "/addTaskDocument",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageTODO"),
   flexibleDocumentUpload(5, 5),
   isValid(addTaskDocumentSchema),
   todoController.addTaskDocument

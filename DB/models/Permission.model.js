@@ -14,18 +14,20 @@ const permissionSchema = new Schema(
       bn: { type: String, required: true },
     },
     permissions: {
-      // Complaints Management
-      manageComplaints: { type: Boolean, default: false }, // Track and respond to complaints
-      // Account Management
-      monitorRegisteredAccounts: { type: Boolean, default: false }, // Oversee and review registered accounts
-      editAccountInformation: { type: Boolean, default: false }, // Modify account details
-      // Service Requests
-      trackServiceRequests: { type: Boolean, default: false }, // Monitor and manage service requests
-      // Professions & Trades Management
-      manageProfessionsTrades: { type: Boolean, default: false }, // Handle profession and trade-related data
-      // Location Management
-      manageCitiesRegions: { type: Boolean, default: false }, // Maintain and update city and region information
-    },
+      manageChats: { type: Boolean, default: false },
+      manageEmployees: { type: Boolean, default: false },
+      manageAttendace: { type: Boolean, default: false },
+      manageJobTasks: { type: Boolean, default: false },
+      manageMaintenances: { type: Boolean, default: false },
+      managePushNotifications: { type: Boolean, default: false },
+      managePermissions: { type: Boolean, default: false },
+      manageStations: { type: Boolean, default: false },
+      manageGasolinePrices: { type: Boolean, default: false },
+      manageViewStats: { type: Boolean, default: false },
+      manageStorages: { type: Boolean, default: false },
+      manageSuppliers: { type: Boolean, default: false },
+      manageTODO: { type: Boolean, default: false },
+    },    
     isDeleted: {
       type: Boolean,
       default: false,

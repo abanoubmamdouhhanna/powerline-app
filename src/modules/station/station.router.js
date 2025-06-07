@@ -4,6 +4,7 @@ import { auth } from "../../middlewares/auth.middleware.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
 import { addGasolinePriceSchema, addPumpSchema, addStationSchema, addStationStoreSchema, deleteDocumentSchema, deleteStoreSchema, documentValidationSchema, gasolineTypeSchema, getPumpTypesSchema, headersSchema, stationIdSchema, updateGasolinePriceSchema, updateStationSchema } from "./controller/station.valdation.js";
 import { flexibleDocumentUpload } from "../../utils/multerCloudinary.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 
@@ -11,7 +12,8 @@ const router = Router();
 router.post(
   "/addGasoline",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   isValid(gasolineTypeSchema),
   stationController.addGasoline
 );
@@ -20,14 +22,15 @@ router.post(
 router.post(
   "/addPump",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   isValid(addPumpSchema),
   stationController.addPump
 );
 //get pumps for station
 router.get("/getPumps/:stationId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   isValid(stationIdSchema),
   stationController.getPumps);
 
@@ -35,7 +38,7 @@ router.get("/getPumps/:stationId",
 router.get(
   "/getPumpTypes",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   isValid(getPumpTypesSchema),
   stationController.getPumpTypes
 );
@@ -44,7 +47,8 @@ router.get(
 router.post(
   "/addStation",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   flexibleDocumentUpload(5, 25),
   isValid(addStationSchema),
   stationController.addStation
@@ -54,7 +58,8 @@ router.post(
 router.get(
   "/getAllStations",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   stationController.getAllStations
 );
 
@@ -62,7 +67,8 @@ router.get(
 router.get(
   "/getSpStation/:stationId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations", "manageEmployees"),
   isValid(stationIdSchema),
   stationController.getSpStation
 );
@@ -71,7 +77,8 @@ router.get(
 router.patch(
   "/updateStation/:stationId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   isValid(updateStationSchema),
   stationController.updateStation
 );
@@ -80,7 +87,8 @@ router.patch(
 router.delete(
   "/deleteStation/:stationId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   isValid(stationIdSchema),
   stationController.deleteStation
 );
@@ -89,7 +97,8 @@ router.delete(
 router.delete(
   "/deleteDocument",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   isValid(deleteDocumentSchema),
   stationController.deleteDocument
 );
@@ -98,7 +107,8 @@ router.delete(
 router.post(
   "/addStationDocument",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   flexibleDocumentUpload(5, 5),
   isValid(documentValidationSchema),
   stationController.addStationDocument
@@ -107,7 +117,8 @@ router.post(
 router.delete(
   "/deleteStore",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   isValid(deleteStoreSchema),
   stationController.deleteStore
 );
@@ -116,7 +127,8 @@ router.delete(
 router.post(
   "/addStationStore",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageStations"),
   flexibleDocumentUpload(5, 5),
   isValid(addStationStoreSchema),
   stationController.addStationStore
@@ -126,7 +138,8 @@ router.post(
 router.post(
   "/addGasolinePrice",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageGasolinePrices"),
   isValid(addGasolinePriceSchema),
   stationController.addGasolinePrice
 );
@@ -135,7 +148,8 @@ router.post(
 router.patch(
   "/updateGasolinePrice/:priceId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageGasolinePrices"),
   isValid(updateGasolinePriceSchema),
   stationController.updateGasolinePrice
 );
@@ -144,7 +158,7 @@ router.patch(
 router.get(
   "/getGasolinePrices/:stationId",
   isValid(headersSchema, true),
-  auth(["employee"]),
+  auth(["admin", "employee", "assistant"]),
   isValid(stationIdSchema),
   stationController.getGasolinePrices
 );

@@ -7,15 +7,21 @@ const getMessage = (key, lang = "en") =>
 
 export const headersSchema = (lang = "en") => generalFields(lang).headers;
 
-const validPermissionKeys = [
-  "manageComplaints",
-  "monitorRegisteredAccounts",
-  "editAccountInformation",
-  "trackServiceRequests",
-  "manageProfessionsTrades",
-  "manageCitiesRegions",
-];
-
+const validPermissionKeys =[
+  "manageChats",
+  "manageEmployees",
+  "manageAttendace",
+  "manageJobTasks",
+  "manageMaintenances",
+  "managePushNotifications",
+  "managePermissions",
+  "manageStations",
+  "manageGasolinePrices",
+  "manageViewStats",
+  "manageStorages",
+  "manageSuppliers",
+  "manageTODO"
+]
 //=========================== CREATE PERMISSION ================================//
 export const createPermissionSchema = (lang = "en") =>
   joi.object({

@@ -7,6 +7,7 @@ import {
 } from "./controller/group.validation.js";
 import { isValid } from "../../middlewares/validation.middleware.js";
 import { auth } from "../../middlewares/auth.middleware.js";
+import { verifyPermissions } from "../../middlewares/verifyPermission.js";
 
 const router = Router();
 
@@ -14,7 +15,8 @@ const router = Router();
 router.post(
   "/createGroup",
   isValid(headersSchema, true),
-  auth(["admin", "employee"]),
+  auth(["admin","assistant"]),
+  verifyPermissions("manageChats"),
   isValid(createGroupsSchema),
   groupController.createGroup
 );
@@ -23,7 +25,7 @@ router.post(
 router.get(
   "/getUserGroups",
   isValid(headersSchema, true),
-  auth(["admin", "employee"]),
+  auth(["admin", "employee", "assistant"]),
   groupController.getUserGroups
 );
 
@@ -31,7 +33,7 @@ router.get(
 router.get(
   "/getGroupMessages/:groupId",
   isValid(headersSchema, true),
-  auth(["admin", "employee"]),
+  auth(["admin", "employee", "assistant"]),
   isValid(getGroupMessagesSchema),
   groupController.getGroupMessages
 );
