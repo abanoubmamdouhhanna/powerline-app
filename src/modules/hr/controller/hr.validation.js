@@ -342,7 +342,13 @@ export const updateEmployeeSchema = (lang = "en") =>
           "date.base": getMessage("INVALID_RESIDENCE_EXPIRY", lang),
           "date.greater": getMessage("RESIDENCE_EXPIRY_FUTURE", lang),
         }),
-
+      workFor: joi
+        .string()
+        .optional()
+        .messages({
+          "string.base": getMessage("WORK-FOR_STRING", lang),
+          "string.empty": getMessage("WORK-FOR_REQUIRED", lang),
+        }),
       file: joi
         .object()
         .pattern(
@@ -401,15 +407,15 @@ export const documentValidationSchema = (lang = "en") =>
         "date.base": getMessage("DOCUMENT_END_DATE_INVALID", lang),
       }),
       file: joi
-      .object()
-      .pattern(
-        joi.string(),
-        joi.array().items(generalFields(lang).fileMetaSchema).min(1)
-      )
-      .required()
-      .messages({
-        "object.base": getMessage("FILES_INVALID", lang),
-        "any.required": getMessage("FILES_REQUIRED", lang),
-      }),
+        .object()
+        .pattern(
+          joi.string(),
+          joi.array().items(generalFields(lang).fileMetaSchema).min(1)
+        )
+        .required()
+        .messages({
+          "object.base": getMessage("FILES_INVALID", lang),
+          "any.required": getMessage("FILES_REQUIRED", lang),
+        }),
     })
     .required();
