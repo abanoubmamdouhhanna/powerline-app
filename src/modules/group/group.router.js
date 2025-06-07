@@ -13,7 +13,7 @@ const router = Router();
 //create group
 router.post(
   "/createGroup",
-
+  isValid(headersSchema, true),
   auth(["admin", "employee"]),
   isValid(createGroupsSchema),
   groupController.createGroup
@@ -22,7 +22,7 @@ router.post(
 //get group
 router.get(
   "/getUserGroups",
-
+  isValid(headersSchema, true),
   auth(["admin", "employee"]),
   groupController.getUserGroups
 );
@@ -30,7 +30,7 @@ router.get(
 //get group messages
 router.get(
   "/getGroupMessages/:groupId",
-
+  isValid(headersSchema, true),
   auth(["admin", "employee"]),
   isValid(getGroupMessagesSchema),
   groupController.getGroupMessages

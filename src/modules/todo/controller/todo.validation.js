@@ -200,7 +200,10 @@ export const updateTaskSchema = (lang = "en") =>
         .messages({
           "string.base": getMessage("USER_ID_INVALID", lang),
         }),
-
+        taskCode: joi
+        .string()
+        .trim()
+        .optional(),
       // Documents validation (optional for update)
       documents: joi
         .array()
