@@ -1072,15 +1072,22 @@ export const getJobTasks = asyncHandler(async (req, res, next) => {
 //station attendance
 export const stationAttendance = asyncHandler(async (req, res, next) => {
   const { stationId } = req.params;
+  const targetLanguage = req.language;
+
   const station = await stationModel.findById(stationId);
   if (!station) {
     return next(new Error("Station not found", { cause: 404 }));
   }
 
-  const attendance = await attendanceModel.find(
-    { station: stationId },
-    "date checkIn checkOut workingHours status"
-  );
+  const attendance = await attendanceModel
+    .find(
+      { station: stationId },
+      "date checkIn checkOut workingHours status user"
+    )
+    .populate({
+      path: "user",
+      select: `name.${targetLanguage}`,
+    });
 
   const statusColorMap = {
     "On Time": "green",
@@ -1089,10 +1096,32 @@ export const stationAttendance = asyncHandler(async (req, res, next) => {
     "Day Off": "blue",
   };
 
-  const formattedAttendance = attendance.map((entry) => ({
-    ...entry.toObject(),
-    statusColor: statusColorMap[entry.status]
-  }));
+  // Translate statuses only once for optimization
+  const statusSet = new Set(attendance.map((entry) => entry.status));
+  const translatedStatuses = {};
+
+  for (const status of statusSet) {
+    const { translatedText } = await translateAutoDetect(
+      status,
+      targetLanguage
+    );
+    translatedStatuses[status] = translatedText;
+  }
+
+  const formattedAttendance = attendance.map((entry) => {
+    const { _id, date, checkIn, checkOut, workingHours, status } = entry;
+
+    return {
+      _id,
+      date,
+      checkIn,
+      checkOut,
+      workingHours,
+      status: translatedStatuses[status],
+      employeeName: entry.user?.name?.[targetLanguage] || "Unknown",
+      statusColor: statusColorMap[status],
+    };
+  });
 
   return res.status(201).json({
     status: "success",
