@@ -9,6 +9,7 @@ import isToday from "dayjs/plugin/isToday.js";
 import isYesterday from "dayjs/plugin/isYesterday.js";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 
 dayjs.extend(relativeTime);
 dayjs.extend(isToday);
@@ -50,7 +51,10 @@ export const createNotification = asyncHandler(async (req, res, next) => {
   );
   res
     .status(200)
-    .json({ message: "Notification Created", data: createNotification });
+    .json({
+      message: getTranslation("Notification Created", req.language),
+      data: createNotification,
+    });
 });
 
 //====================================================================================================================//
@@ -106,7 +110,6 @@ export const getAllNotifications = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Notifications retrieved successfully",
     count: formattedNotifications.length,
     ...paginationResult,
     result: formattedNotifications,
@@ -144,7 +147,6 @@ export const getNotificationById = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Notification retrieved successfully",
     result: formattedNotification,
   });
 });
@@ -175,6 +177,6 @@ export const deleteNotification = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Notification deleted successfully",
+    message: getTranslation("Notification deleted successfully", req.language),
   });
 });

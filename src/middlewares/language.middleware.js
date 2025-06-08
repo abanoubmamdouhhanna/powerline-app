@@ -8,7 +8,3 @@ export const languageMiddleware = (req, res, next) => {
 export const getTranslation = (key, lang = "en") => {
   return resTranslations[key]?.[lang] || resTranslations[key]?.["en"] || key;
 };
-
-export const selectFunction = (req, selectEn, selectAr) => {
-  return req.language === "en" ? selectEn : selectAr;
-};

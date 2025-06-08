@@ -1,6 +1,7 @@
 import permissionModel from "../../../../DB/models/Permission.model.js";
 import userModel from "../../../../DB/models/User.model.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
 
 //create permission
@@ -66,7 +67,7 @@ export const createPermission = asyncHandler(async (req, res, next) => {
 
   return res.status(201).json({
     status: "success",
-    message: "Permission created successfully",
+    message: getTranslation("Permission created successfully", language),
     result: formattedResponse,
   });
 });
@@ -115,7 +116,7 @@ export const assignPermissionToUsers = asyncHandler(async (req, res) => {
   await permission.save();
 
   res.status(200).json({
-    message: "Permissions assigned successfully",
+    message: getTranslation("Permissions assigned successfully", req.language),
   });
 });
 //====================================================================================================================//
@@ -141,7 +142,6 @@ export const getAllPermissions = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Permissions fetched successfully",
     count: formattedPermissions.length,
     result: formattedPermissions,
   });
@@ -172,7 +172,6 @@ export const getPermissionById = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Permission fetched successfully",
     result: {
       _id: permission._id,
       permissionName:
@@ -302,7 +301,7 @@ export const updatePermission = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Permission updated successfully",
+    message: getTranslation("Permission updated successfully", language),
     result: {
       _id: permission._id,
       permissionName:
@@ -338,6 +337,6 @@ export const deletePermission = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Permission deleted successfully",
+    message: getTranslation("Permission deleted successfully", req.language),
   });
 });

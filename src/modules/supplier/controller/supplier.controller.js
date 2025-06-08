@@ -12,6 +12,7 @@ import userModel from "../../../../DB/models/User.model.js";
 import stationModel from "../../../../DB/models/Station.model.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 import { ApiFeatures } from "../../../utils/apiFeatures.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 
 //add supplier
 export const addSupplier = asyncHandler(async (req, res, next) => {
@@ -69,7 +70,7 @@ export const addSupplier = asyncHandler(async (req, res, next) => {
 
   return res.status(201).json({
     status: "success",
-    message: "Supplier created successfully",
+    message: getTranslation("Supplier added successfully", req.language),
     supplier: newSupplier,
   });
 });
@@ -156,7 +157,7 @@ export const updateSupplier = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Supplier updated successfully",
+    message: getTranslation("Supplier updated successfully", language),
     result: formattedResponse,
   });
 });
@@ -247,7 +248,7 @@ export const deleteSupplier = asyncHandler(async (req, res, next) => {
   // Respond with success
   return res.status(200).json({
     status: "success",
-    message: "Supplier deleted successfully",
+    message: getTranslation("Supplier deleted successfully", req.language),
   });
 });
 //====================================================================================================================//
@@ -291,7 +292,10 @@ export const supplierRequest = asyncHandler(async (req, res, next) => {
 
   return res.status(201).json({
     status: "success",
-    message: "Supplier request created successfully",
+    message: getTranslation(
+      "Supplier request created successfully",
+      req.language
+    ),
     result: newSupplierRequest,
   });
 });
@@ -751,7 +755,7 @@ export const reviewRequest = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Order reviewed successfully",
+    message: getTranslation("Order reviewed successfully", req.language),
     result: supplierReq,
   });
 });
@@ -767,7 +771,10 @@ export const completeReq = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Supplier request completed successfully",
+    message: getTranslation(
+      "Supplier request completed successfully",
+      req.language
+    ),
     result: completeReq,
   });
 });
@@ -804,6 +811,9 @@ export const deleteReq = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Request and associated images deleted successfully.",
+    message: getTranslation(
+      "Request and associated images deleted successfully",
+      req.language
+    ),
   });
 });

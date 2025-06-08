@@ -1,11 +1,11 @@
 import messageModel from "../../../../DB/models/Message.model.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
 import { format, isToday, isYesterday } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 
 // 💬 **Get Messages Between Two Users**
-
 export const getMessages = asyncHandler(async (req, res, next) => {
   const userOne = req.user._id;
   const userTwo = req.params.userId;
@@ -31,24 +31,26 @@ export const getMessages = asyncHandler(async (req, res, next) => {
 
   // Translate messages and group by date
   const groupedMessages = {};
-  
+
   // Process messages in parallel for better performance
   const translationPromises = messages.map(async (msg) => {
     try {
       // Only translate text content (skip if messageType is file/media)
       let translatedContent = msg.content;
-      if (msg.messageType === 'text' && msg.content) {
-        const { translatedText } = await translateAutoDetect(msg.content, targetLang);
+      if (msg.messageType === "text" && msg.content) {
+        const { translatedText } = await translateAutoDetect(
+          msg.content,
+          targetLang
+        );
         translatedContent = translatedText;
       }
 
       const createdAt = new Date(msg.createdAt);
       const label = isToday(createdAt)
-      ? "Today"
-      : isYesterday(createdAt)
-      ? "Yesterday"
-      : format(createdAt, "M/d/yyyy");
-
+        ? "Today"
+        : isYesterday(createdAt)
+        ? "Yesterday"
+        : format(createdAt, "M/d/yyyy");
 
       return {
         label,
@@ -57,17 +59,17 @@ export const getMessages = asyncHandler(async (req, res, next) => {
           content: translatedContent,
           time: formatInTimeZone(createdAt, "Asia/Riyadh", "HH:mm"),
           isSender: String(msg.senderId) === String(userOne),
-        }
+        },
       };
     } catch (error) {
       console.error(`Failed to translate message ${msg._id}:`, error);
       // Return original message if translation fails
       const createdAt = new Date(msg.createdAt);
       const label = isToday(createdAt)
-      ? "Today"
-      : isYesterday(createdAt)
-      ? "Yesterday"
-      : format(createdAt, "M/d/yyyy");
+        ? "Today"
+        : isYesterday(createdAt)
+        ? "Yesterday"
+        : format(createdAt, "M/d/yyyy");
 
       return {
         label,
@@ -75,7 +77,7 @@ export const getMessages = asyncHandler(async (req, res, next) => {
           ...msg,
           time: formatInTimeZone(createdAt, "Asia/Riyadh", "HH:mm"),
           isSender: String(msg.senderId) === String(userOne),
-        }
+        },
       };
     }
   });
@@ -93,7 +95,10 @@ export const getMessages = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Messages retrieved and grouped by date.",
+    message: getTranslation(
+      "Messages retrieved and grouped by date",
+      targetLang
+    ),
     result: groupedMessages,
   });
 });
@@ -108,7 +113,7 @@ export const uploadMessageFile = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "File uploaded successfully",
+    message: getTranslation("File uploaded successfully", req.language),
     fileUrl,
   });
 });

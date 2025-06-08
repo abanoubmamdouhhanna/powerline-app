@@ -149,7 +149,7 @@ export const createEmployee = asyncHandler(async (req, res, next) => {
   await existingStationWithEmployees.save();
 
   return res.status(201).json({
-    message: "Employee created successfully",
+    message: getTranslation("Employee created successfully", req.language),
     result: newEmployee,
   });
 });
@@ -281,9 +281,7 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
 
   const existingEmployee = await userModel.findById(employeeId);
   if (!existingEmployee) {
-    return next(
-      new Error(getTranslation("Employee not found", language), { cause: 404 })
-    );
+    return next(new Error("Employee not found", { cause: 404 }));
   }
 
   const {
@@ -321,13 +319,13 @@ export const updateEmployee = asyncHandler(async (req, res, next) => {
 
   if (existingEmail)
     return next(
-      new Error(getTranslation("Email already exists", language), {
+      new Error("Email already exists", {
         cause: 409,
       })
     );
   if (existingPhone)
     return next(
-      new Error(getTranslation("Phone number already exists", language), {
+      new Error("Phone number already exists", {
         cause: 409,
       })
     );
@@ -460,7 +458,11 @@ export const deleteEmployee = asyncHandler(async (req, res, next) => {
     // Remove from DB
     await existingEmployee.deleteOne();
 
-    return res.status(200).json({ message: "Employee deleted successfully" });
+    return res
+      .status(200)
+      .json({
+        message: getTranslation("Employee deleted successfully", req.language),
+      });
   } catch (error) {
     return next(new Error("Failed to delete employee", { cause: 500 }));
   }
@@ -536,7 +538,10 @@ export const deleteDocument = asyncHandler(async (req, res, next) => {
   await user.save();
 
   return res.status(200).json({
-    message: "Document and associated files & folder deleted successfully",
+    message: getTranslation(
+      "Document and associated files & folder deleted successfully",
+      req.language
+    ),
   });
 });
 //====================================================================================================================//
@@ -582,7 +587,7 @@ export const addUserDocument = asyncHandler(async (req, res, next) => {
   await user.save();
 
   return res.status(201).json({
-    message: "Document added successfully",
+    message: getTranslation("Document added successfully", req.language),
     document: user.documents.at(-1),
   });
 });
@@ -601,7 +606,9 @@ export const getAllEmployees = asyncHandler(async (req, res, next) => {
   const stations = await stationModel.find({}, "employees stationName").lean();
 
   // Step 3: Fetch all permission documents (assistant list + name)
-  const permissions = await permissionModel.find({}, "assistant permissionName").lean();
+  const permissions = await permissionModel
+    .find({}, "assistant permissionName")
+    .lean();
 
   // Step 4: Build response
   const translatedEmployees = await Promise.all(
@@ -609,7 +616,9 @@ export const getAllEmployees = asyncHandler(async (req, res, next) => {
       const empId = emp._id.toString();
 
       // Name Translation
-      const employeeName = emp.name ? emp.name[targetLang] || emp.name.en : "N/A";
+      const employeeName = emp.name
+        ? emp.name[targetLang] || emp.name.en
+        : "N/A";
 
       // TimeWork Translation
       const { translatedText: employeeTimeWork } = await translateAutoDetect(
@@ -630,7 +639,8 @@ export const getAllEmployees = asyncHandler(async (req, res, next) => {
         perm.assistant.some((id) => id.toString() === empId)
       );
       const permissionName = employeePermission
-        ? employeePermission.permissionName?.[targetLang] || employeePermission.permissionName?.en
+        ? employeePermission.permissionName?.[targetLang] ||
+          employeePermission.permissionName?.en
         : "Employee";
 
       return {
@@ -748,7 +758,7 @@ export const userAttendance = asyncHandler(async (req, res, next) => {
 
   const formattedAttendance = attendance.map((entry) => ({
     ...entry.toObject(),
-    statusColor: statusColorMap[entry.status]
+    statusColor: statusColorMap[entry.status],
   }));
 
   return res.status(201).json({

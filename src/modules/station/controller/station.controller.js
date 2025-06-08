@@ -312,7 +312,7 @@ export const addStation = asyncHandler(async (req, res, next) => {
   });
 
   return res.status(201).json({
-    message: "Station added successfully",
+    message: getTranslation("Station added successfully", req.language),
     result: newStation,
   });
 });
@@ -475,7 +475,7 @@ export const updateStation = asyncHandler(async (req, res, next) => {
     updatedAt: updatedStation.updatedAt,
   };
   return res.status(200).json({
-    message: "Station updated successfully",
+    message: getTranslation("Station updated successfully", language),
     result: formattedResponse,
   });
 });
@@ -538,7 +538,9 @@ export const deleteStation = asyncHandler(async (req, res, next) => {
   }
 
   // Return success response
-  return res.status(200).json({ message: "Station deleted successfully" });
+  return res.status(200).json({
+    message: getTranslation("Station deleted successfully", req.language),
+  });
 });
 //====================================================================================================================//
 //delete document
@@ -607,7 +609,10 @@ export const deleteDocument = asyncHandler(async (req, res, next) => {
   await station.save();
 
   return res.status(200).json({
-    message: "Document and associated files & folder deleted successfully",
+    message: getTranslation(
+      "Document and associated files & folder deleted successfully",
+      req.language
+    ),
   });
 });
 //====================================================================================================================//
@@ -651,7 +656,7 @@ export const addStationDocument = asyncHandler(async (req, res, next) => {
   await station.save();
 
   return res.status(201).json({
-    message: "Document added successfully",
+    message: getTranslation("Document added successfully", req.language),
     document: station.documents.at(-1),
   });
 });
@@ -739,8 +744,10 @@ export const deleteStore = asyncHandler(async (req, res, next) => {
 
   // Step 11: Return success response
   return res.status(200).json({
-    message:
+    message: getTranslation(
       "Store deleted successfully, including lease document and shop image",
+      req.language
+    ),
   });
 });
 //====================================================================================================================//
@@ -818,7 +825,7 @@ export const addStationStore = asyncHandler(async (req, res, next) => {
 
   // Step 9: Return success response
   return res.status(201).json({
-    message: "Store added successfully",
+    message: getTranslation("Store added successfully", req.language),
     store: station.stores.at(-1),
   });
 });
@@ -867,7 +874,7 @@ export const addGasolinePrice = asyncHandler(async (req, res, next) => {
   });
 
   return res.status(201).json({
-    message: "Gasoline price added successfully",
+    message: getTranslation("Price added successfully", req.language),
     result: newPrice,
   });
 });
@@ -917,7 +924,7 @@ export const updateGasolinePrice = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Price updated successfully",
+    message: getTranslation("Price updated successfully", language),
     result: formattedResponse,
   });
 });
@@ -958,7 +965,6 @@ export const getGasolinePrices = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Gasoline prices retrieved successfully",
     result: translatedPrices,
   });
 });

@@ -2,6 +2,7 @@ import messageModel from "../../../../DB/models/Message.model.js";
 import userModel from "../../../../DB/models/User.model.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
 import groupModel from "../../../../DB/models/Group.model.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 
 //search contacts
 export const searchContacts = asyncHandler(async (req, res, next) => {
@@ -39,7 +40,7 @@ export const searchContacts = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Searched contacts.",
+    message: getTranslation("Searched contacts", targetLanguage),
     contacts: formattedContacts,
   });
 });
@@ -69,7 +70,7 @@ export const getAllContacts = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Contacts retrieved successfully.",
+    message: getTranslation("Contacts retrieved successfully", targetLang),
     contacts,
   });
 });
@@ -206,7 +207,7 @@ export const getDMListUnified = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "DM list retrieved successfully",
+    message: getTranslation("DM list retrieved successfully", targetLang),
     data: combined,
   });
 });

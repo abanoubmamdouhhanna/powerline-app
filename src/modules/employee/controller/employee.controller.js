@@ -1,5 +1,6 @@
 import attendanceModel from "../../../../DB/models/Attendance.model.js";
 import userModel from "../../../../DB/models/User.model.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
 
 //add make checkin and checkout
@@ -27,11 +28,16 @@ export const checkIn = asyncHandler(async (req, res, next) => {
     station: user.station,
     date: dateOnly,
     checkIn,
-    checked:true,
+    checked: true,
     checkInLocation: location,
   });
 
-  res.status(201).json({ message: "Checked in successfully.", attendance });
+  res
+    .status(201)
+    .json({
+      message: getTranslation("Checked in successfully", req.language),
+      attendance,
+    });
 });
 //====================================================================================================================//
 //checkOut
@@ -56,19 +62,20 @@ export const checkOut = asyncHandler(async (req, res, next) => {
 
   attendance.checkOut = checkOut;
   attendance.checkOutLocation = location;
-  attendance.checked=false,
-
-  await attendance.save(); // triggers workingHours calculation
+  (attendance.checked = false), await attendance.save(); // triggers workingHours calculation
 
   return res
     .status(200)
-    .json({ message: "Checked out successfully.", attendance });
+    .json({
+      message: getTranslation("Checked out successfully", req.language),
+      attendance,
+    });
 });
 //====================================================================================================================//
 //profile
 export const profile = asyncHandler(async (req, res, next) => {
   const employeeId = req.user._id;
-  const targetLang = req.language || "en"; 
+  const targetLang = req.language || "en";
 
   const empProfile = await userModel
     .findById(employeeId)

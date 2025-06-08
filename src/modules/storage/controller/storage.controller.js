@@ -3,6 +3,7 @@ import storagesModel from "../../../../DB/models/Storages.model.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
 import { deleteFromCloudinary, uploadImageCloudinary } from "../../../utils/cloudinaryHelpers.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 
 //create storage
 export const createStorage = asyncHandler(async (req, res, next) => {
@@ -25,7 +26,7 @@ export const createStorage = asyncHandler(async (req, res, next) => {
   });
   res.status(201).json({
     status: "success",
-    message: "Storage created successfully",
+    message: getTranslation("Storage created successfully", req.language),
     result: storage,
   });
 });
@@ -57,7 +58,6 @@ export const getAllStorages = asyncHandler(async (req, res, next) => {
   
     res.status(200).json({
       status: "success",
-      message: "Storages retrieved successfully",
       result: formattedStorages,
     });
   });
@@ -94,7 +94,6 @@ export const getStorageById = asyncHandler(async (req, res, next) => {
   
     res.status(200).json({
       status: "success",
-      message: "Storage retrieved successfully",
       result: formattedStorage,
     });
   });
@@ -162,7 +161,7 @@ export const updateStorage = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Storage updated successfully",
+    message: getTranslation("Storage updated successfully", language),
     result: formattedResponse,
   });
 });
@@ -180,6 +179,6 @@ export const deleteStorage = asyncHandler(async (req, res, next) => {
   await storage.deleteOne();
   res.status(200).json({
     status: "success",
-    message: "Storage deleted successfully",
+    message: getTranslation("Storage deleted successfully", req.language),
   });
 });

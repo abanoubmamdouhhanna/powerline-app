@@ -10,10 +10,11 @@ import { translateMultiLang } from "../../../../languages/api/translateMultiLang
 import cloudinary from "../../../utils/cloudinary.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 import stationModel from "../../../../DB/models/Station.model.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 
 //create task
 export const createTask = asyncHandler(async (req, res, next) => {
-  const language = req.language || 'en';
+  const language = req.language || "en";
   const {
     user,
     taskName,
@@ -27,7 +28,7 @@ export const createTask = asyncHandler(async (req, res, next) => {
   // Basic validation with translated messages
   if (!taskName || !startDate || !deadline) {
     return next(
-      new Error("Task name, start date, and deadline are required",{
+      new Error("Task name, start date, and deadline are required", {
         cause: 400,
       })
     );
@@ -35,8 +36,8 @@ export const createTask = asyncHandler(async (req, res, next) => {
 
   if (new Date(startDate) > new Date(deadline)) {
     return next(
-      new Error("Start date must be before the deadline",{ 
-        cause: 400 
+      new Error("Start date must be before the deadline", {
+        cause: 400,
       })
     );
   }
@@ -45,11 +46,14 @@ export const createTask = asyncHandler(async (req, res, next) => {
   const uploadedFiles = req.files || {};
 
   // Translate fields
-  const [translatedTaskName, translatedTaskDetails, translatedComment] = await Promise.all([
-    translateMultiLang(taskName),
-    taskDetails ? translateMultiLang(taskDetails) : Promise.resolve(undefined),
-    comment ? translateMultiLang(comment) : Promise.resolve(undefined)
-  ]);
+  const [translatedTaskName, translatedTaskDetails, translatedComment] =
+    await Promise.all([
+      translateMultiLang(taskName),
+      taskDetails
+        ? translateMultiLang(taskDetails)
+        : Promise.resolve(undefined),
+      comment ? translateMultiLang(comment) : Promise.resolve(undefined),
+    ]);
 
   // Process documents with error handling
   let processedDocuments = [];
@@ -82,19 +86,21 @@ export const createTask = asyncHandler(async (req, res, next) => {
 
             return {
               title: translatedTitle,
-              files: fileUploads.map(file => ({
+              files: fileUploads.map((file) => ({
                 secure_url: file.secure_url,
                 public_id: file.public_id,
-                resource_type: file.resource_type
+                resource_type: file.resource_type,
               })),
             };
           })
         )
       : [];
   } catch (error) {
-    return next(new Error("Error processing documents",{ 
-      cause: 500 
-    }));
+    return next(
+      new Error("Error processing documents", {
+        cause: 500,
+      })
+    );
   }
 
   const newTask = await toDoModel.create({
@@ -113,26 +119,33 @@ export const createTask = asyncHandler(async (req, res, next) => {
   const formattedTask = {
     _id: newTask._id,
     customId: newTask.customId,
-    taskName: newTask.taskName[language] || newTask.taskName.en || Object.values(newTask.taskName)[0],
+    taskName:
+      newTask.taskName[language] ||
+      newTask.taskName.en ||
+      Object.values(newTask.taskName)[0],
     startDate: newTask.startDate,
     deadline: newTask.deadline,
-    taskDetails: newTask.taskDetails?.[language] || newTask.taskDetails?.en || newTask.taskDetails,
-    comment: newTask.comment?.[language] || newTask.comment?.en || newTask.comment,
+    taskDetails:
+      newTask.taskDetails?.[language] ||
+      newTask.taskDetails?.en ||
+      newTask.taskDetails,
+    comment:
+      newTask.comment?.[language] || newTask.comment?.en || newTask.comment,
     status: newTask.status,
     user: newTask.user,
     createdBy: newTask.createdBy,
-    documents: newTask.documents.map(doc => ({
+    documents: newTask.documents.map((doc) => ({
       title: doc.title[language] || doc.title.en || Object.values(doc.title)[0],
       files: doc.files,
-      _id: doc._id
+      _id: doc._id,
     })),
     createdAt: newTask.createdAt,
-    updatedAt: newTask.updatedAt
+    updatedAt: newTask.updatedAt,
   };
 
   return res.status(201).json({
     status: "success",
-    message: "Task created successfully",
+    message: getTranslation("Task created successfully", language),
     result: formattedTask,
   });
 });
@@ -184,7 +197,7 @@ export const getTasks = asyncHandler(async (req, res, next) => {
       const statusColorMap = {
         "Not Started": "red",
         "To Do": "warning",
-        "Completed": "green",
+        Completed: "green",
       };
 
       const originalStatus =
@@ -196,7 +209,10 @@ export const getTasks = asyncHandler(async (req, res, next) => {
 
       if (typeof task.status === "string" && targetLang !== "en") {
         try {
-          const { translatedText } = await translateAutoDetect(task.status, targetLang);
+          const { translatedText } = await translateAutoDetect(
+            task.status,
+            targetLang
+          );
           translatedStatus = translatedText;
         } catch (error) {
           console.error("Status translation failed:", error);
@@ -281,7 +297,7 @@ export const getTaskbyId = asyncHandler(async (req, res, next) => {
       const statusColorMap = {
         "Not Started": "red",
         "To Do": "warning",
-        "Completed": "green",
+        Completed: "green",
       };
 
       const originalStatus =
@@ -294,7 +310,10 @@ export const getTaskbyId = asyncHandler(async (req, res, next) => {
       if (typeof task.status === "string") {
         if (targetLang !== "en") {
           try {
-            const { translatedText } = await translateAutoDetect(task.status, targetLang);
+            const { translatedText } = await translateAutoDetect(
+              task.status,
+              targetLang
+            );
             translatedStatus = translatedText;
           } catch (error) {
             console.error("Failed to translate status:", error);
@@ -339,10 +358,12 @@ export const changeStatus = asyncHandler(async (req, res, next) => {
   const { status, taskId } = req.body;
 
   if (!status || !taskId) {
-
-    return next(new Error("Status and taskId are required",{ 
-      cause: 400 
-    }))  }
+    return next(
+      new Error("Status and taskId are required", {
+        cause: 400,
+      })
+    );
+  }
 
   const updateTask = await toDoModel.findOneAndUpdate(
     { _id: taskId, createdBy: req.user._id },
@@ -351,11 +372,17 @@ export const changeStatus = asyncHandler(async (req, res, next) => {
   );
 
   if (!updateTask) {
-    return next(new Error("Task not found or unauthorized",{ 
-      cause: 404 
-    }))  }
+    return next(
+      new Error("Task not found or unauthorized", {
+        cause: 404,
+      })
+    );
+  }
   return res.status(200).json({
-    message: "Task status updated successfully",
+    message: getTranslation(
+      "Task status updated successfully",
+      req.language || "en"
+    ),
     result: updateTask,
   });
 });
@@ -374,16 +401,14 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
     : null;
 
   // 2. 🔍 Build mongoose query with nested population
-  const mongooseQuery = toDoModel
-    .find({ createdBy: req.user._id })
-    .populate({
-      path: "user",
-      select: "name email imageUrl timeWork permissions",
-      populate: {
-        path: "permissions",
-        select: "permissionName",
-      },
-    });
+  const mongooseQuery = toDoModel.find({ createdBy: req.user._id }).populate({
+    path: "user",
+    select: "name email imageUrl timeWork permissions",
+    populate: {
+      path: "permissions",
+      select: "permissionName",
+    },
+  });
 
   // 3. 🗓 Parse date filters
   const dateFields = ["startDate", "deadline"];
@@ -465,7 +490,7 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
       const statusColorMap = {
         "Not Started": "red",
         "To Do": "warning",
-        "Completed": "green",
+        Completed: "green",
       };
 
       const originalStatus = task.status;
@@ -473,7 +498,10 @@ export const getAllTasks = asyncHandler(async (req, res, next) => {
 
       if (typeof originalStatus === "string" && targetLang !== "en") {
         try {
-          const { translatedText } = await translateAutoDetect(originalStatus, targetLang);
+          const { translatedText } = await translateAutoDetect(
+            originalStatus,
+            targetLang
+          );
           translatedStatus = translatedText;
         } catch (error) {
           console.error("Status translation failed:", error);
@@ -570,7 +598,7 @@ export const updateTask = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     status: "success",
-    message: "Task updated successfully.",
+    message: getTranslation("Task updated successfully", targetLang),
     task: responseTask,
   });
 });
@@ -625,7 +653,14 @@ export const deleteTask = asyncHandler(async (req, res, next) => {
       })
     );
   }
-  return res.status(200).json({ message: "Task deleted successfully" });
+  return res
+    .status(200)
+    .json({
+      message: getTranslation(
+        "Task deleted successfully",
+        req.language || "en"
+      ),
+    });
 });
 //====================================================================================================================//
 //delete task document
@@ -690,7 +725,12 @@ export const deleteTaskDocument = asyncHandler(async (req, res, next) => {
   await task.save();
   return res
     .status(200)
-    .json({ message: "Task document deleted successfully" });
+    .json({
+      message: getTranslation(
+        "Task document deleted successfully",
+        req.language || "en"
+      ),
+    });
 });
 //====================================================================================================================//
 //add task document
@@ -734,7 +774,10 @@ export const addTaskDocument = asyncHandler(async (req, res, next) => {
 
   return res.status(201).json({
     status: "success",
-    message: "Task document added successfully.",
+    message: getTranslation(
+      "Task document added successfully",
+      req.language || "en"
+    ),
     task,
   });
 });

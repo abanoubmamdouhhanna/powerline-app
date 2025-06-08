@@ -2,6 +2,7 @@ import groupModel from "../../../../DB/models/Group.model.js";
 import userModel from "../../../../DB/models/User.model.js";
 import { asyncHandler } from "../../../utils/errorHandling.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 //create group
 export const createGroup = asyncHandler(async (req, res, next) => {
   const { name, members } = req.body;
@@ -29,7 +30,7 @@ export const createGroup = asyncHandler(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    message: "Group created successfully.",
+    message: getTranslation("Group created successfully", req.language),
     group: newGroup,
   });
 });
@@ -71,7 +72,6 @@ export const getUserGroups = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Groups retrieved successfully.",
     data: {
       groups: formattedGroups,
     },
@@ -94,7 +94,6 @@ export const getGroupMessages = asyncHandler(async (req, res, next) => {
   }
   return res.status(201).json({
     status: "success",
-    message: "Group messages retrieved successfully.",
     messages: group.messages,
   });
 });

@@ -10,6 +10,7 @@ import {
 import { asyncHandler } from "../../../utils/errorHandling.js";
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 import { ApiFeatures } from "../../../utils/apiFeatures.js";
+import { getTranslation } from "../../../middlewares/language.middleware.js";
 
 //create maintenance request
 export const maintenanceRequest = asyncHandler(async (req, res, next) => {
@@ -59,7 +60,10 @@ export const maintenanceRequest = asyncHandler(async (req, res, next) => {
   // Respond
   res.status(201).json({
     status: "success",
-    message: "Maintenance request created successfully",
+    message: getTranslation(
+      "Maintenance request created successfully",
+      req.language
+    ),
     result: maintenance,
   });
 });
@@ -120,7 +124,10 @@ export const updateMaintenanceRequest = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Maintenance request updated successfully",
+    message: getTranslation(
+      "Maintenance request updated successfully",
+      req.language
+    ),
     result: updatedMaintenance,
   });
 });
@@ -196,7 +203,6 @@ export const getAllMaintenanceRequests = asyncHandler(
 
     res.status(200).json({
       status: "success",
-      message: "Maintenance requests retrieved successfully",
       count: formattedRequests.length,
       result: formattedRequests,
     });
@@ -312,11 +318,11 @@ export const getMaintenanceRequestByStationId = asyncHandler(
     // 2. Base mongoose query
     let mongooseQuery = maintenanceModel
       .find({ station: user.station })
-      .populate("station", "stationName").sort({ createdAt: -1 }); 
+      .populate("station", "stationName")
+      .sort({ createdAt: -1 });
 
     // 3. Apply filters, sort by createdAt descending, paginate
-    const apiFeatures = new ApiFeatures(mongooseQuery, req.query)
-      .filter()
+    const apiFeatures = new ApiFeatures(mongooseQuery, req.query).filter();
 
     const paginationResult = await apiFeatures.paginate();
     const maintenanceRequests = await apiFeatures.mongooseQuery.lean();
@@ -382,7 +388,6 @@ export const getMaintenanceRequestByStationId = asyncHandler(
     // 5. Send response
     res.status(200).json({
       status: "success",
-      message: "Maintenance requests retrieved successfully",
       count: formattedRequests.length,
       pagination: paginationResult,
       result: formattedRequests,
@@ -407,7 +412,11 @@ export const deleteMaintenanceRequest = asyncHandler(async (req, res, next) => {
   await maintenance.deleteOne();
   res.status(200).json({
     status: "success",
-    message: "Maintenance request deleted successfully",
+    message: getTranslation(
+      "Maintenance request deleted successfully",
+      req.language
+    ),
+    result: maintenance,
   });
 });
 
@@ -480,14 +489,17 @@ export const updateMaintenanceRequestStatus = asyncHandler(
 
     res.status(200).json({
       status: "success",
-      message: "Maintenance request deleted successfully",
+      message: getTranslation(
+        "Maintenance request status updated successfully",
+        req.language
+      ),
       result: {
         ...rest,
         employeeName,
         description,
         status: translatedStatus,
         color,
-        stationName, // include only translated string
+        stationName,
       },
     });
   }
