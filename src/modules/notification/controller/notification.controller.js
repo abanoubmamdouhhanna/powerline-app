@@ -51,10 +51,7 @@ export const createNotification = asyncHandler(async (req, res, next) => {
   );
   res
     .status(200)
-    .json({
-      message: getTranslation("Notification Created", req.language),
-      data: createNotification,
-    });
+    .json({ message: getTranslation("Notification Created", req.language), data: createNotification });
 });
 
 //====================================================================================================================//
