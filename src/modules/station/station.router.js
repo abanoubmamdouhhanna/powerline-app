@@ -11,6 +11,7 @@ import {
   deleteStoreSchema,
   documentValidationSchema,
   gasolineTypeSchema,
+  getJobTaskByIdSchema,
   getPumpTypesSchema,
   headersSchema,
   stationIdSchema,
@@ -198,5 +199,16 @@ router.get(
   isValid(stationIdSchema),
   stationController.stationAttendance
 );
+
+//get job tasks
+router.get(
+  "/getJobTaskById",
+  isValid(headersSchema, true),
+  auth(["admin", "assistant"]),
+  verifyPermissions("manageJobTasks", "manageEmployees", "manageStations"),
+  isValid(getJobTaskByIdSchema),
+  stationController.getJobTaskById
+);
+
 
 export default router;

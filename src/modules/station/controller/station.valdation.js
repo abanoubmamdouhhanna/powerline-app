@@ -493,3 +493,12 @@ export const updateGasolinePriceSchema = (lang = "en") =>
       dieselPrice: priceSchema,
     })
     .required();
+
+//=========================== JOB TASK STATION VALIDATION SCHEMA ============================//
+export const getJobTaskByIdSchema = (lang = "en") =>
+  joi
+    .object({
+      stationId: generalFields(lang).id,
+      taskId:generalFields(lang).id
+    })
+    .required();

@@ -1135,3 +1135,100 @@ export const stationAttendance = asyncHandler(async (req, res, next) => {
     result: formattedAttendance,
   });
 });
+
+//====================================================================================================================//
+//get job task by id
+export const getJobTaskById = asyncHandler(async (req, res, next) => {
+  const { stationId, taskId } = req.body;
+  const targetLang = req.language || "en"; // Fallback to English
+
+  // 1. Verify station exists
+  const station = await stationModel.findById(stationId);
+  if (!station) {
+    return next(new Error("Station not found", { cause: 404 }));
+  }
+
+  // 2. Try finding task in cleaning tasks
+  const cleaningTask = await cleaningTaskModel.findOne({
+    _id: taskId,
+    station: stationId,
+  });
+
+  if (cleaningTask) {
+    const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
+      translateAutoDetect(cleaningTask.employeeName, targetLang),
+      translateAutoDetect(cleaningTask.subTask, targetLang),
+    ]);
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        type: "cleaning",
+        _id: cleaningTask._id,
+        subTask: subTaskTranslation.translatedText,
+        date: cleaningTask.date,
+        time: cleaningTask.time,
+        location: cleaningTask.location,
+        employeeName: employeeNameTranslation.translatedText,
+        cleaningImages: cleaningTask.cleaningImages,
+        createdAt: cleaningTask.createdAt,
+      },
+    });
+  }
+
+  // 3. Try finding task in inventory tasks
+  const inventoryTask = await inventoryTaskModel
+    .findOne({ _id: taskId, station: stationId })
+    .populate({
+      path: "pumps.pump",
+      select: "pumpName",
+    })
+    .populate({
+      path: "pumps.pistols.pistol",
+      select: "gasolineName",
+    });
+
+  if (inventoryTask) {
+    const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
+      translateAutoDetect(inventoryTask.employeeName, targetLang),
+      translateAutoDetect(inventoryTask.subTask, targetLang),
+    ]);
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        type: "inventory",
+        _id: inventoryTask._id,
+        subTask: subTaskTranslation.translatedText,
+        date: inventoryTask.date,
+        time: inventoryTask.time,
+        location: inventoryTask.location,
+        employeeName: employeeNameTranslation.translatedText,
+        inventoryImages: inventoryTask.inventoryImages,
+        pumps: inventoryTask.pumps.map((pumpItem) => ({
+          _id: pumpItem._id,
+          pump:
+            typeof pumpItem.pump?.pumpName === "object"
+              ? pumpItem.pump.pumpName[targetLang] ||
+                pumpItem.pump.pumpName.en ||
+                Object.values(pumpItem.pump.pumpName)[0]
+              : pumpItem.pump?.pumpName || null,
+          pistols: pumpItem.pistols.map((pistolItem) => ({
+            _id: pistolItem._id,
+            pistol:
+              typeof pistolItem.pistol?.gasolineName === "object"
+                ? pistolItem.pistol.gasolineName[targetLang] ||
+                  pistolItem.pistol.gasolineName.en ||
+                  Object.values(pistolItem.pistol.gasolineName)[0]
+                : pistolItem.pistol?.gasolineName || null,
+            counterNumber: pistolItem.counterNumber,
+          })),
+        })),
+        createdAt: inventoryTask.createdAt,
+      },
+    });
+  }
+
+  // 4. Not found in either collection
+  return next(new Error("Task not found for this station", { cause: 404 }));
+});
