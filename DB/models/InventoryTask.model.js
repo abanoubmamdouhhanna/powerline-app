@@ -8,6 +8,11 @@ const inventoryTaskSchema = new Schema(
       ref: "User",
       required: true,
     },
+    station: {
+      type: Types.ObjectId,
+      ref: "Station",
+      required: true,
+    },
     employeeName: {
       type: String,
       required: true,

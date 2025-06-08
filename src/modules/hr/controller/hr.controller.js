@@ -748,7 +748,7 @@ export const userAttendance = asyncHandler(async (req, res, next) => {
 
   const formattedAttendance = attendance.map((entry) => ({
     ...entry.toObject(),
-    statusColor: statusColorMap[entry.status] || "gray", // fallback color
+    statusColor: statusColorMap[entry.status]
   }));
 
   return res.status(201).json({

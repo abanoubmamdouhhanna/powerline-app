@@ -15,6 +15,9 @@ import {
 import translateAutoDetect from "../../../../languages/api/translateAutoDetect.js";
 import { translateMultiLang } from "../../../../languages/api/translateMultiLang.js";
 import gasolineModel from "../../../../DB/models/GasolinePrice.model.js";
+import cleaningTaskModel from "../../../../DB/models/CleaningTask.model.js";
+import inventoryTaskModel from "../../../../DB/models/InventoryTask.model.js";
+import attendanceModel from "../../../../DB/models/Attendance.model.js";
 
 // add gasoline type
 export const addGasoline = asyncHandler(async (req, res, next) => {
@@ -957,5 +960,143 @@ export const getGasolinePrices = asyncHandler(async (req, res, next) => {
     status: "success",
     message: "Gasoline prices retrieved successfully",
     result: translatedPrices,
+  });
+});
+//====================================================================================================================//
+//get job tasks
+export const getJobTasks = asyncHandler(async (req, res, next) => {
+  const { stationId } = req.params;
+  const targetLang = req.language || "en"; // Fallback to English
+
+  // 1. Find user
+  const station = await stationModel.findById(stationId);
+  if (!station) {
+    return next(new Error("station not found", { cause: 404 }));
+  }
+  const employeeId = station.employee;
+
+  // 2. Fetch cleaning tasks with createdAt
+  const cleaningTasksRaw = await cleaningTaskModel.find(
+    { station: stationId },
+    "subTask date time location employeeName cleaningImages createdAt"
+  );
+
+  const cleaningTasks = await Promise.all(
+    cleaningTasksRaw.map(async (task) => {
+      const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
+        translateAutoDetect(task.employeeName, targetLang),
+        translateAutoDetect(task.subTask, targetLang),
+      ]);
+
+      return {
+        type: "cleaning",
+        _id: task._id,
+        subTask: subTaskTranslation.translatedText,
+        date: task.date,
+        time: task.time,
+        location: task.location, // no translation
+        employeeName: employeeNameTranslation.translatedText,
+        cleaningImages: task.cleaningImages,
+        createdAt: task.createdAt,
+      };
+    })
+  );
+
+  // 3. Fetch inventory tasks with createdAt
+  const inventoryTasksRaw = await inventoryTaskModel
+    .find(
+      { station: stationId },
+      "subTask date time location employeeName inventoryImages pumps createdAt"
+    )
+    .populate({
+      path: "pumps.pump",
+      select: "pumpName",
+    })
+    .populate({
+      path: "pumps.pistols.pistol",
+      select: "gasolineName",
+    });
+
+  const inventoryTasks = await Promise.all(
+    inventoryTasksRaw.map(async (task) => {
+      const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
+        translateAutoDetect(task.employeeName, targetLang),
+        translateAutoDetect(task.subTask, targetLang),
+      ]);
+
+      return {
+        type: "inventory",
+        _id: task._id,
+        subTask: subTaskTranslation.translatedText,
+        date: task.date,
+        time: task.time,
+        location: task.location, // no translation
+        employeeName: employeeNameTranslation.translatedText,
+        inventoryImages: task.inventoryImages,
+        pumps: task.pumps.map((pumpItem) => ({
+          _id: pumpItem._id,
+          pump:
+            typeof pumpItem.pump?.pumpName === "object"
+              ? pumpItem.pump.pumpName[targetLang] ||
+                pumpItem.pump.pumpName.en ||
+                Object.values(pumpItem.pump.pumpName)[0]
+              : pumpItem.pump?.pumpName || null,
+          pistols: pumpItem.pistols.map((pistolItem) => ({
+            _id: pistolItem._id,
+            pistol:
+              typeof pistolItem.pistol?.gasolineName === "object"
+                ? pistolItem.pistol.gasolineName[targetLang] ||
+                  pistolItem.pistol.gasolineName.en ||
+                  Object.values(pistolItem.pistol.gasolineName)[0]
+                : pistolItem.pistol?.gasolineName || null,
+            counterNumber: pistolItem.counterNumber,
+          })),
+        })),
+        createdAt: task.createdAt,
+      };
+    })
+  );
+
+  // 4. Merge and sort by createdAt descending
+  const allTasks = [...cleaningTasks, ...inventoryTasks].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+
+  // 5. Send final response
+  return res.status(200).json({
+    status: "success",
+    data: allTasks,
+  });
+});
+//====================================================================================================================//
+//station attendance
+export const stationAttendance = asyncHandler(async (req, res, next) => {
+  const { stationId } = req.params;
+  const station = await stationModel.findById(stationId);
+  if (!station) {
+    return next(new Error("Station not found", { cause: 404 }));
+  }
+
+  const attendance = await attendanceModel.find(
+    { station: stationId },
+    "date checkIn checkOut workingHours status"
+  );
+
+  const statusColorMap = {
+    "On Time": "green",
+    Late: "red",
+    Absent: "warning",
+    "Day Off": "blue",
+  };
+
+  const formattedAttendance = attendance.map((entry) => ({
+    ...entry.toObject(),
+    statusColor: statusColorMap[entry.status]
+  }));
+
+  return res.status(201).json({
+    status: "success",
+    attendanceDays: attendance.length,
+    result: formattedAttendance,
   });
 });
