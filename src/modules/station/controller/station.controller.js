@@ -20,6 +20,7 @@ import inventoryTaskModel from "../../../../DB/models/InventoryTask.model.js";
 import attendanceModel from "../../../../DB/models/Attendance.model.js";
 import permissionModel from "../../../../DB/models/Permission.model.js";
 import userModel from "../../../../DB/models/User.model.js";
+import supplierModel from "../../../../DB/models/Supplier.model.js";
 
 // add gasoline type
 export const addGasoline = asyncHandler(async (req, res, next) => {
@@ -298,6 +299,11 @@ export const addStation = asyncHandler(async (req, res, next) => {
       )
     : [];
 
+  const supplierExists = await supplierModel.findById(supplier);
+  if (!supplierExists) {
+    return next(new Error("Supplier not found", { cause: 404 }));
+  }
+
   // 5. Create and respond
   const newStation = await stationModel.create({
     customId,
@@ -312,7 +318,10 @@ export const addStation = asyncHandler(async (req, res, next) => {
     documents: processedDocuments,
     stores: processedStores,
   });
-
+  await supplierModel.updateOne(
+    { _id: supplier },
+    { $addToSet: { station: newStation._id } } // ✅ Avoids duplicates
+  );
   return res.status(201).json({
     message: getTranslation("Station added successfully", req.language),
     result: newStation,
@@ -410,7 +419,9 @@ export const getSpStation = asyncHandler(async (req, res, next) => {
   // Translate main station fields
   stationObj.stationName = getField(stationObj.stationName);
   stationObj.stationAddress = getField(stationObj.stationAddress);
-  stationObj.supplierName = station.supplier ? getField(station.supplier.supplierName) : "Unknown Supplier"; // Add supplierName with fallback
+  stationObj.supplierName = station.supplier
+    ? getField(station.supplier.supplierName)
+    : "Unknown Supplier"; // Add supplierName with fallback
 
   // Remove the raw supplier object from the response
   delete stationObj.supplier;
@@ -464,6 +475,10 @@ export const updateStation = asyncHandler(async (req, res, next) => {
       return next(new Error("Supplier not found", { cause: 404 }));
     }
     updatedFields.supplier = supplier;
+    await supplierModel.updateOne(
+      { _id: supplier },
+      { $addToSet: { station: stationId } }
+    );
   }
 
   const updatedStation = await stationModel
@@ -477,9 +492,6 @@ export const updateStation = asyncHandler(async (req, res, next) => {
   if (!updatedStation) {
     return next(new Error("Station not found", { cause: 404 }));
   }
-
-  // Debug: Log the populated supplier data
-  console.log("Populated supplier:", updatedStation.supplier);
 
   const formattedResponse = {
     _id: updatedStation._id,
