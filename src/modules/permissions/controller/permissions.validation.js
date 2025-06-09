@@ -74,7 +74,7 @@ export const updatePermissionSchema = (lang = "en") =>
       }),
     assistantUserIds: joi
       .array()
-      .items(generalFields(lang).id)
+      .items(generalFields(lang).optionalId)
       .optional()
       .messages({
         "array.base": getMessage("userIds_must_be_array", lang),
