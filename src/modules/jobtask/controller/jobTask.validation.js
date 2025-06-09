@@ -33,7 +33,7 @@ export const cleaningJobTaskSchema = (lang = "en") =>
           "string.base": getMessage("SUB_TASK_INVALID", lang),
         }),
 
-      file: joi
+        file: joi
         .object()
         .pattern(
           joi.string(),
@@ -43,8 +43,7 @@ export const cleaningJobTaskSchema = (lang = "en") =>
         .messages({
           "object.base": getMessage("FILES_INVALID", lang),
           "any.required": getMessage("FILES_REQUIRED", lang),
-        }),
-    })
+        }),    })
     .required();
 
 //=========================== PISTOL SCHEMA ================================//
@@ -110,7 +109,7 @@ export const inventoryJobTaskSchema = (lang = "en") =>
           "string.base": getMessage("PUMPS_MUST_BE_STRING", lang),
         }),
 
-      file: joi
+        file: joi
         .object()
         .pattern(
           joi.string(),
@@ -121,5 +120,5 @@ export const inventoryJobTaskSchema = (lang = "en") =>
           "object.base": getMessage("FILES_INVALID", lang),
           "any.required": getMessage("FILES_REQUIRED", lang),
         }),
-    })
+          })
     .required();
