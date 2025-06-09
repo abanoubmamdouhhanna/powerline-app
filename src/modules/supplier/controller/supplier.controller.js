@@ -421,7 +421,7 @@ export const getALLSupplierReq = asyncHandler(async (req, res, next) => {
 });
 
 //====================================================================================================================//
-//get sp supplier request
+//get sp supplier request 
 export const getSpReq = asyncHandler(async (req, res, next) => {
   const targetLang = req.language || "en";
   const { reqId } = req.params;
