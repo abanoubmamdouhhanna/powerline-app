@@ -1176,12 +1176,12 @@ export const stationAttendance = asyncHandler(async (req, res, next) => {
 //     let permissionDoc = await permissionModel.findOne({
 //       assistant: cleaningTask.user,
 //     }).lean();
-   
+
 //     const translatedPermissionName =
 //       permissionDoc?.permissionName?.[targetLang] ||
 //       permissionDoc?.permissionName?.en ||
 //       getTranslation("defaultPermissionNameFallback",targetLang)
-   
+
 //     return res.status(200).json({
 //       status: "success",
 //       data: {
@@ -1289,10 +1289,12 @@ export const getJobTaskById = asyncHandler(async (req, res, next) => {
   }
 
   // 2. Try finding task in cleaning tasks
-  const cleaningTask = await cleaningTaskModel.findOne({
-    _id: taskId,
-    station: stationId,
-  }).lean();
+  const cleaningTask = await cleaningTaskModel
+    .findOne({
+      _id: taskId,
+      station: stationId,
+    })
+    .lean();
 
   if (cleaningTask) {
     const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
@@ -1300,9 +1302,11 @@ export const getJobTaskById = asyncHandler(async (req, res, next) => {
       translateAutoDetect(cleaningTask.subTask, targetLang),
     ]);
 
-    const permissionDoc = await permissionModel.findOne({
-      assistant: cleaningTask.user,
-    }).lean();
+    const permissionDoc = await permissionModel
+      .findOne({
+        assistant: cleaningTask.user,
+      })
+      .lean();
 
     const userDoc = await userModel
       .findById(cleaningTask.user)
@@ -1312,7 +1316,7 @@ export const getJobTaskById = asyncHandler(async (req, res, next) => {
     const translatedPermissionName =
       permissionDoc?.permissionName?.[targetLang] ||
       permissionDoc?.permissionName?.en ||
-      getTranslation("defaultPermissionNameFallback", targetLang); 
+      getTranslation("defaultPermissionNameFallback", targetLang);
 
     return res.status(200).json({
       status: "success",
@@ -1352,9 +1356,11 @@ export const getJobTaskById = asyncHandler(async (req, res, next) => {
       translateAutoDetect(inventoryTask.subTask, targetLang),
     ]);
 
-    const permissionDoc = await permissionModel.findOne({
-      assistant: inventoryTask.user,
-    }).lean();
+    const permissionDoc = await permissionModel
+      .findOne({
+        assistant: inventoryTask.user,
+      })
+      .lean();
 
     const userDoc = await userModel
       .findById(inventoryTask.user)

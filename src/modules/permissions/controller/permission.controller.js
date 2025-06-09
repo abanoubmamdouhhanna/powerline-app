@@ -149,13 +149,48 @@ export const getAllPermissions = asyncHandler(async (req, res, next) => {
 
 //====================================================================================================================//
 //get permission by id
+// export const getPermissionById = asyncHandler(async (req, res, next) => {
+//   const language = req.language || "en";
+//   const { id } = req.params;
+
+//   const permission = await permissionModel
+//     .findById(id)
+//     .populate({ path: "assistant", select: "name" });
+
+//   if (!permission) {
+//     return next(
+//       new Error("Permission not found", {
+//         cause: 404,
+//       })
+//     );
+//   }
+
+//   // Safe mapping in case assistant is undefined or empty
+//   const assistants = Array.isArray(permission.assistant)
+//     ? permission.assistant.map((user) => user.name[language] || user.name.en)
+//     : [];
+
+//   res.status(200).json({
+//     status: "success",
+//     result: {
+//       _id: permission._id,
+//       permissionName:
+//         permission.permissionName[language] || permission.permissionName.en,
+//       permissions: permission.permissions,
+//       assistant: assistants,
+//       createdAt: permission.createdAt,
+//       updatedAt: permission.updatedAt,
+//     },
+//   });
+// });
+
 export const getPermissionById = asyncHandler(async (req, res, next) => {
   const language = req.language || "en";
   const { id } = req.params;
 
   const permission = await permissionModel
     .findById(id)
-    .populate({ path: "assistant", select: "name" });
+    .populate({ path: "assistant", select: "name imageUrl" }) // imageUrl optional
 
   if (!permission) {
     return next(
@@ -165,9 +200,19 @@ export const getPermissionById = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Safe mapping in case assistant is undefined or empty
   const assistants = Array.isArray(permission.assistant)
-    ? permission.assistant.map((user) => user.name[language] || user.name.en)
+    ? permission.assistant.map((user) => {
+        const nameObj = user.name;
+        const name =
+          (typeof nameObj === "object"
+            ? nameObj?.[language] || nameObj?.en || Object.values(nameObj)[0]
+            : nameObj) || "Unnamed";
+
+        return {
+          _id: user._id,
+          name,
+        };
+      })
     : [];
 
   res.status(200).json({
@@ -175,7 +220,9 @@ export const getPermissionById = asyncHandler(async (req, res, next) => {
     result: {
       _id: permission._id,
       permissionName:
-        permission.permissionName[language] || permission.permissionName.en,
+        permission.permissionName?.[language] ||
+        permission.permissionName?.en ||
+        "Unnamed Permission",
       permissions: permission.permissions,
       assistant: assistants,
       createdAt: permission.createdAt,
@@ -183,6 +230,7 @@ export const getPermissionById = asyncHandler(async (req, res, next) => {
     },
   });
 });
+
 //====================================================================================================================//
 //update permission
 export const updatePermission = asyncHandler(async (req, res, next) => {
