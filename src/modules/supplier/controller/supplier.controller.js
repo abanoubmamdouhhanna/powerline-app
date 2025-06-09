@@ -586,11 +586,11 @@ export const sendToStation = asyncHandler(async (req, res, next) => {
     pricePerLiter,
     status: "Review underway",
   };
-  if (req.body.status != "Review underway") {
-    return next(
-      new Error("Status should be 'Review underway'", { cause: 400 })
-    );
-  }
+  // if (req.body.status != "Review underway") {
+  //   return next(
+  //     new Error("Status should be 'Review underway'", { cause: 400 })
+  //   );
+  // }
   // Manually calculate totalCost if both values are present
   if (totalLiters != null && pricePerLiter != null) {
     updateData.totalCost = totalLiters * pricePerLiter;
