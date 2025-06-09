@@ -123,7 +123,7 @@ export const getNotificationById = asyncHandler(async (req, res, next) => {
 
   if (!notification) {
     return next(
-      new Error(getTranslation("Notification not found", language), {
+      new Error(getTranslation(`No notification found`, language), {
         cause: 404,
       })
     );

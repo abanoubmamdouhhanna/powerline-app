@@ -638,7 +638,7 @@ export const deleteTask = asyncHandler(async (req, res, next) => {
     await deleteFromCloudinary(folderBase);
   } catch (error) {
     return next(
-      new Error(`Error deleting folder from Cloudinary: ${error.message}`, {
+      new Error(`Error deleting folder from Cloudinary`, {
         cause: 500,
       })
     );
@@ -648,7 +648,7 @@ export const deleteTask = asyncHandler(async (req, res, next) => {
     await toDoModel.findByIdAndDelete(taskId);
   } catch (error) {
     return next(
-      new Error(`Error deleting station from database: ${error.message}`, {
+      new Error(`Error deleting station from database`, {
         cause: 500,
       })
     );

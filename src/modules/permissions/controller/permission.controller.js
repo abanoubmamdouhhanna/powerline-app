@@ -155,7 +155,7 @@ export const getPermissionById = asyncHandler(async (req, res, next) => {
 
   const permission = await permissionModel
     .findById(id)
-    .populate({ path: "assistant", select: "name imageUrl" }) // imageUrl optional
+    .populate({ path: "assistant", select: "name imageUrl" }); // imageUrl optional
 
   if (!permission) {
     return next(
