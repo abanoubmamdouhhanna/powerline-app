@@ -264,7 +264,7 @@ export const updateStationSchema = (lang = "en") =>
           "any.required": getMessage("NO_OF_PISTOLS_REQUIRED", lang),
         }),
 
-      supplier: generalFields(lang).id,
+      supplier: generalFields(lang).optionalId,
 
       noOfGreenPistol: joi
         .number()

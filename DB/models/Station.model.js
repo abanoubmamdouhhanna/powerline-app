@@ -171,12 +171,11 @@ stationSchema.virtual("gasolinePrice", {
   localField: "_id",
   foreignField: "station",
 });
-stationSchema.virtual("suplierDetails", {
+stationSchema.virtual("supplierDetails", {
   ref: "Supplier",
   localField: "supplier",
   foreignField: "_id",
 });
-
 // 🔹 Model Export
 const stationModel = mongoose.models.Station || model("Station", stationSchema);
 export default stationModel;

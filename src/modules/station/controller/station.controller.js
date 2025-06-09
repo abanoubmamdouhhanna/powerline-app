@@ -445,22 +445,36 @@ export const updateStation = asyncHandler(async (req, res, next) => {
 
   if (noOfPumps !== undefined) updatedFields.noOfPumps = noOfPumps;
   if (noOfPistol !== undefined) updatedFields.noOfPistol = noOfPistol;
-  if (supplier) updatedFields.supplier = supplier;
   if (noOfGreenPistol !== undefined)
     updatedFields.noOfGreenPistol = noOfGreenPistol;
   if (noOfRedPistol !== undefined) updatedFields.noOfRedPistol = noOfRedPistol;
   if (noOfDieselPistol !== undefined)
     updatedFields.noOfDieselPistol = noOfDieselPistol;
 
-  const updatedStation = await stationModel.findByIdAndUpdate(
-    stationId,
-    { $set: updatedFields },
-    { new: true, runValidators: true }
-  );
+  // Validate supplier if provided
+  if (supplier) {
+    const supplierExists = await supplierModel.findById(supplier);
+    if (!supplierExists) {
+      return next(new Error("Supplier not found", { cause: 404 }));
+    }
+    updatedFields.supplier = supplier;
+  }
+
+  const updatedStation = await stationModel
+    .findByIdAndUpdate(
+      stationId,
+      { $set: updatedFields },
+      { new: true, runValidators: true }
+    )
+    .populate("supplier", `supplierName.${language}`); // Populate supplier with only the supplierName in the specified language
 
   if (!updatedStation) {
     return next(new Error("Station not found", { cause: 404 }));
   }
+
+  // Debug: Log the populated supplier data
+  console.log("Populated supplier:", updatedStation.supplier);
+
   const formattedResponse = {
     _id: updatedStation._id,
     customId: updatedStation.customId,
@@ -468,7 +482,8 @@ export const updateStation = asyncHandler(async (req, res, next) => {
     stationAddress: updatedStation.stationAddress?.[language],
     noOfPumps: updatedStation.noOfPumps,
     noOfPistol: updatedStation.noOfPistol,
-    supplier: updatedStation.supplier,
+    supplier:
+      updatedStation.supplier?.supplierName?.[language] || "Unknown Supplier", // Fallback if supplierName is missing
     noOfGreenPistol: updatedStation.noOfGreenPistol,
     noOfRedPistol: updatedStation.noOfRedPistol,
     noOfDieselPistol: updatedStation.noOfDieselPistol,
@@ -476,12 +491,12 @@ export const updateStation = asyncHandler(async (req, res, next) => {
     createdAt: updatedStation.createdAt,
     updatedAt: updatedStation.updatedAt,
   };
+
   return res.status(200).json({
     message: getTranslation("Station updated successfully", language),
     result: formattedResponse,
   });
 });
-
 //====================================================================================================================//
 //delete station
 export const deleteStation = asyncHandler(async (req, res, next) => {
@@ -1140,134 +1155,6 @@ export const stationAttendance = asyncHandler(async (req, res, next) => {
 
 //====================================================================================================================//
 //get job task by id
-// export const getJobTaskById = asyncHandler(async (req, res, next) => {
-//   const { stationId, taskId } = req.params;
-//   const targetLang = req.language || "en"; // Fallback to English
-
-//   // 1. Verify station exists
-//   const station = await stationModel.findById(stationId).lean();
-//   if (!station) {
-//     return next(new Error("Station not found", { cause: 404 }));
-//   }
-
-//   let translatedStationName = "";
-//   if (typeof station.stationName === "object") {
-//     translatedStationName =
-//       station.stationName?.[targetLang] ||
-//       station.stationName?.en ||
-//       Object.values(station.stationName)[0];
-//   } else {
-//     translatedStationName = station.stationName;
-//   }
-
-//   // 2. Try finding task in cleaning tasks
-//   const cleaningTask = await cleaningTaskModel.findOne({
-//     _id: taskId,
-//     station: stationId,
-//   }).lean();
-
-//   if (cleaningTask) {
-//     const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
-//       translateAutoDetect(cleaningTask.employeeName, targetLang),
-//       translateAutoDetect(cleaningTask.subTask, targetLang),
-//     ]);
-
-//     // 🔹 Find permissionName
-//     let permissionDoc = await permissionModel.findOne({
-//       assistant: cleaningTask.user,
-//     }).lean();
-
-//     const translatedPermissionName =
-//       permissionDoc?.permissionName?.[targetLang] ||
-//       permissionDoc?.permissionName?.en ||
-//       getTranslation("defaultPermissionNameFallback",targetLang)
-
-//     return res.status(200).json({
-//       status: "success",
-//       data: {
-//         type: "cleaning",
-//         _id: cleaningTask._id,
-//         stationName: translatedStationName,
-//         subTask: subTaskTranslation.translatedText,
-//         date: cleaningTask.date,
-//         time: cleaningTask.time,
-//         location: cleaningTask.location,
-//         employeeName: employeeNameTranslation.translatedText,
-//         permissionName: translatedPermissionName,
-//         cleaningImages: cleaningTask.cleaningImages,
-//         createdAt: cleaningTask.createdAt,
-//       },
-//     });
-//   }
-
-//   // 3. Try finding task in inventory tasks
-//   const inventoryTask = await inventoryTaskModel
-//     .findOne({ _id: taskId, station: stationId })
-//     .populate({
-//       path: "pumps.pump",
-//       select: "pumpName",
-//     })
-//     .populate({
-//       path: "pumps.pistols.pistol",
-//       select: "gasolineName",
-//     })
-//     .lean();
-
-//   if (inventoryTask) {
-//     const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
-//       translateAutoDetect(inventoryTask.employeeName, targetLang),
-//       translateAutoDetect(inventoryTask.subTask, targetLang),
-//     ]);
-
-//     // 🔹 Find permissionName
-//     let permissionDoc = await permissionModel.findOne({
-//       assistant: inventoryTask.user,
-//     }).lean();
-
-//     let translatedPermissionName = permissionDoc?.permissionName?.[targetLang] ||
-//       permissionDoc?.permissionName?.en ||
-//       "Employee";
-
-//     return res.status(200).json({
-//       status: "success",
-//       data: {
-//         type: "inventory",
-//         _id: inventoryTask._id,
-//         stationName: translatedStationName,
-//         subTask: subTaskTranslation.translatedText,
-//         date: inventoryTask.date,
-//         time: inventoryTask.time,
-//         location: inventoryTask.location,
-//         employeeName: employeeNameTranslation.translatedText,
-//         permissionName: translatedPermissionName,
-//         inventoryImages: inventoryTask.inventoryImages,
-//         pumps: inventoryTask.pumps.map((pumpItem) => ({
-//           _id: pumpItem._id,
-//           pump:
-//             typeof pumpItem.pump?.pumpName === "object"
-//               ? pumpItem.pump.pumpName[targetLang] ||
-//                 pumpItem.pump.pumpName.en ||
-//                 Object.values(pumpItem.pump.pumpName)[0]
-//               : pumpItem.pump?.pumpName || null,
-//           pistols: pumpItem.pistols.map((pistolItem) => ({
-//             _id: pistolItem._id,
-//             pistol:
-//               typeof pistolItem.pistol?.gasolineName === "object"
-//                 ? pistolItem.pistol.gasolineName[targetLang] ||
-//                   pistolItem.pistol.gasolineName.en ||
-//                   Object.values(pistolItem.pistol.gasolineName)[0]
-//                 : pistolItem.pistol?.gasolineName || null,
-//             counterNumber: pistolItem.counterNumber,
-//           })),
-//         })),
-//         createdAt: inventoryTask.createdAt,
-//       },
-//     });
-//   }
-
-//   // 4. Not found in either collection
-//   return next(new Error("Task not found for this station", { cause: 404 }));
-// });
 export const getJobTaskById = asyncHandler(async (req, res, next) => {
   const { stationId, taskId } = req.params;
   const targetLang = req.language || "en";
