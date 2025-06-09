@@ -202,7 +202,7 @@ router.get(
 
 //get job tasks
 router.get(
-  "/getJobTaskById",
+  "/getJobTaskById/:stationId/:taskId",
   isValid(headersSchema, true),
   auth(["admin", "assistant"]),
   verifyPermissions("manageJobTasks", "manageEmployees", "manageStations"),

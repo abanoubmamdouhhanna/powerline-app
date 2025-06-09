@@ -1139,7 +1139,7 @@ export const stationAttendance = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 //get job task by id
 export const getJobTaskById = asyncHandler(async (req, res, next) => {
-  const { stationId, taskId } = req.body;
+  const { stationId, taskId } = req.params;
   const targetLang = req.language || "en"; // Fallback to English
 
   // 1. Verify station exists
