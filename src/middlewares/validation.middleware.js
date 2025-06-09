@@ -20,7 +20,7 @@ export const isValid = (joiSchema, considerHeaders = false) => {
 
     if (error) {
       return res.status(422).json({
-        message:language=="en"? 'Validation Error':"خطأ في التحقق",
+        message:'Validation Error',
         status_code: 422,
         errors: Object.fromEntries(
           error.details.map((err) => [err.context.key, err.message])
