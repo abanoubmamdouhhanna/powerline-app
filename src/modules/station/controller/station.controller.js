@@ -375,7 +375,10 @@ export const getSpStation = asyncHandler(async (req, res, next) => {
   const { stationId } = req.params;
   const targetLang = req.language || "en";
 
-  const station = await stationModel.findOne({ _id: stationId });
+  const station = await stationModel
+    .findOne({ _id: stationId })
+    .populate("supplier", `supplierName.${targetLang}`); // Populate supplier with only the supplierName in the specified language
+
   if (!station) return next(new Error("Station not found", { cause: 404 }));
 
   const getField = (fieldObj) => {
@@ -407,13 +410,16 @@ export const getSpStation = asyncHandler(async (req, res, next) => {
   // Translate main station fields
   stationObj.stationName = getField(stationObj.stationName);
   stationObj.stationAddress = getField(stationObj.stationAddress);
+  stationObj.supplierName = station.supplier ? getField(station.supplier.supplierName) : "Unknown Supplier"; // Add supplierName with fallback
+
+  // Remove the raw supplier object from the response
+  delete stationObj.supplier;
 
   return res.status(200).json({
     message: "Success",
     result: stationObj,
   });
 });
-
 //====================================================================================================================//
 //update station
 export const updateStation = asyncHandler(async (req, res, next) => {
