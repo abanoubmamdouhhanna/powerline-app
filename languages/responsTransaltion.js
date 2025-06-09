@@ -202,6 +202,11 @@ export const resTranslations = {
     ar: "تم تحديث السعر بنجاح",
     bn: "দাম সফলভাবে আপডেট করা হয়েছে",
   },
+  defaultPermissionNameFallback: {
+    en: "Station Employee",
+    ar: "موظف محطة",
+    bn: "স্টেশন কর্মচারী",
+  },
   //statistics module
   //no translation found
 

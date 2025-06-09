@@ -18,6 +18,7 @@ import gasolineModel from "../../../../DB/models/GasolinePrice.model.js";
 import cleaningTaskModel from "../../../../DB/models/CleaningTask.model.js";
 import inventoryTaskModel from "../../../../DB/models/InventoryTask.model.js";
 import attendanceModel from "../../../../DB/models/Attendance.model.js";
+import permissionModel from "../../../../DB/models/Permission.model.js";
 
 // add gasoline type
 export const addGasoline = asyncHandler(async (req, res, next) => {
@@ -1143,16 +1144,26 @@ export const getJobTaskById = asyncHandler(async (req, res, next) => {
   const targetLang = req.language || "en"; // Fallback to English
 
   // 1. Verify station exists
-  const station = await stationModel.findById(stationId);
+  const station = await stationModel.findById(stationId).lean();
   if (!station) {
     return next(new Error("Station not found", { cause: 404 }));
+  }
+
+  let translatedStationName = "";
+  if (typeof station.stationName === "object") {
+    translatedStationName =
+      station.stationName?.[targetLang] ||
+      station.stationName?.en ||
+      Object.values(station.stationName)[0];
+  } else {
+    translatedStationName = station.stationName;
   }
 
   // 2. Try finding task in cleaning tasks
   const cleaningTask = await cleaningTaskModel.findOne({
     _id: taskId,
     station: stationId,
-  });
+  }).lean();
 
   if (cleaningTask) {
     const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
@@ -1160,16 +1171,28 @@ export const getJobTaskById = asyncHandler(async (req, res, next) => {
       translateAutoDetect(cleaningTask.subTask, targetLang),
     ]);
 
+    // 🔹 Find permissionName
+    let permissionDoc = await permissionModel.findOne({
+      assistant: cleaningTask.user,
+    }).lean();
+   
+    const translatedPermissionName =
+      permissionDoc?.permissionName?.[targetLang] ||
+      permissionDoc?.permissionName?.en ||
+      getTranslation("defaultPermissionNameFallback",targetLang)
+   
     return res.status(200).json({
       status: "success",
       data: {
         type: "cleaning",
         _id: cleaningTask._id,
+        stationName: translatedStationName,
         subTask: subTaskTranslation.translatedText,
         date: cleaningTask.date,
         time: cleaningTask.time,
         location: cleaningTask.location,
         employeeName: employeeNameTranslation.translatedText,
+        permissionName: translatedPermissionName,
         cleaningImages: cleaningTask.cleaningImages,
         createdAt: cleaningTask.createdAt,
       },
@@ -1186,7 +1209,8 @@ export const getJobTaskById = asyncHandler(async (req, res, next) => {
     .populate({
       path: "pumps.pistols.pistol",
       select: "gasolineName",
-    });
+    })
+    .lean();
 
   if (inventoryTask) {
     const [employeeNameTranslation, subTaskTranslation] = await Promise.all([
@@ -1194,16 +1218,27 @@ export const getJobTaskById = asyncHandler(async (req, res, next) => {
       translateAutoDetect(inventoryTask.subTask, targetLang),
     ]);
 
+    // 🔹 Find permissionName
+    let permissionDoc = await permissionModel.findOne({
+      assistant: inventoryTask.user,
+    }).lean();
+
+    let translatedPermissionName = permissionDoc?.permissionName?.[targetLang] ||
+      permissionDoc?.permissionName?.en ||
+      "Employee";
+
     return res.status(200).json({
       status: "success",
       data: {
         type: "inventory",
         _id: inventoryTask._id,
+        stationName: translatedStationName,
         subTask: subTaskTranslation.translatedText,
         date: inventoryTask.date,
         time: inventoryTask.time,
         location: inventoryTask.location,
         employeeName: employeeNameTranslation.translatedText,
+        permissionName: translatedPermissionName,
         inventoryImages: inventoryTask.inventoryImages,
         pumps: inventoryTask.pumps.map((pumpItem) => ({
           _id: pumpItem._id,
@@ -1232,3 +1267,4 @@ export const getJobTaskById = asyncHandler(async (req, res, next) => {
   // 4. Not found in either collection
   return next(new Error("Task not found for this station", { cause: 404 }));
 });
+
