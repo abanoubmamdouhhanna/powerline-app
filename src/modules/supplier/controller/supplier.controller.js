@@ -430,7 +430,7 @@ export const getSpReq = asyncHandler(async (req, res, next) => {
   const supplierRequest = await suppliesRequestModel
     .findById(
       reqId,
-      "supplier station fuelAmount fuelType status carImage receiptImage safetyImage specsImage isCarCompleted matchingSpecs matchingSafety"
+      "supplier station fuelAmount fuelType status carImage receiptImage safetyImage specsImage isCarCompleted matchingSpecs matchingSafety paymentMethod pricePerLiter totalLiters" // Added missing fields
     )
     .populate("stationDetails", "stationName")
     .populate(
@@ -515,6 +515,9 @@ export const getSpReq = asyncHandler(async (req, res, next) => {
     isCarCompleted:
       translatedValues.isCarCompleted?.translatedText ||
       supplierRequest.isCarCompleted,
+    paymentMethod: supplierRequest.paymentMethod,
+    pricePerLiter: supplierRequest.pricePerLiter,
+    totalLiters: supplierRequest.totalLiters,
   };
 
   return res.status(200).json({
@@ -586,11 +589,6 @@ export const sendToStation = asyncHandler(async (req, res, next) => {
     pricePerLiter,
     status: "Review underway",
   };
-  // if (req.body.status != "Review underway") {
-  //   return next(
-  //     new Error("Status should be 'Review underway'", { cause: 400 })
-  //   );
-  // }
   // Manually calculate totalCost if both values are present
   if (totalLiters != null && pricePerLiter != null) {
     updateData.totalCost = totalLiters * pricePerLiter;
