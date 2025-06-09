@@ -577,14 +577,14 @@ export const sendToSupplier = asyncHandler(async (req, res, next) => {
 //====================================================================================================================//
 // Send to station manager with totalCost calculation
 export const sendToStation = asyncHandler(async (req, res, next) => {
-  const { reqId, paymentMethod, totalLiters, pricePerLiter, status } = req.body;
+  const { reqId, paymentMethod, totalLiters, pricePerLiter } = req.body;
 
   // Build update object
   const updateData = {
     paymentMethod,
     totalLiters,
     pricePerLiter,
-    status,
+    status: "Review underway",
   };
   if (req.body.status != "Review underway") {
     return next(

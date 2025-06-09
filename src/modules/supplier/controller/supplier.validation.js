@@ -296,15 +296,15 @@ export const sendToStationSchema = (lang = "en") =>
           "any.required": getMessage("PRICE_PER_LITER_REQUIRED", lang),
         }),
 
-      status: joi
-        .string()
-        .valid("Review underway")
-        .required()
-        .messages({
-          "string.base": getMessage("STATUS_INVALID", lang),
-          "any.only": getMessage("STATUS_MUST_BE_REVIEW", lang),
-          "any.required": getMessage("STATUS_REQUIRED", lang),
-        }),
+      // status: joi
+      //   .string()
+      //   .valid("Review underway")
+      //   .required()
+      //   .messages({
+      //     "string.base": getMessage("STATUS_INVALID", lang),
+      //     "any.only": getMessage("STATUS_MUST_BE_REVIEW", lang),
+      //     "any.required": getMessage("STATUS_REQUIRED", lang),
+      //   }),
     })
     .required();
 
