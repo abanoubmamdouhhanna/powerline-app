@@ -1,0 +1,16 @@
+// firebase-key.js
+const serviceAccount = {
+  type: "service_account",
+  project_id: "power-line-gas",
+  private_key_id: "66d792adb3eff5fa2bdb81b921f41afd470a26ea",
+  private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDLs5O3wcNaC7HQ\nvJV+ipd3mefj0cHyonvmjkGnFWv5W2/6C1k8zW2bgUoNyCDbsZeKREfWecgIxv4y\nBYGmwh2UlJ5wqiw4/qT5WAP0ZCuXmQJM2zr5nT1E2SXRzdedhwTykxf/2fPvDKQw\nA3qeHPh7iSoQBeVdlTWTGaCiMQUu/aouCouzTKMTJRbxCLa1OuDbxr01dVFOyJh8\nEmUS83SU4xQaRAUvFivkH9LWcqgRQTU3nUbgyPvP9JiLnvN2+WkBcXQNmnyyrafE\n/l4UqI7+joChqsgVI6Ds20AC3Sp3Hug7Wy3Gdysmg5HqLpG6aEApQfFooV1CdeqG\n3p+6MsXrAgMBAAECggEAIbe329LW4zDMXiDZHfkS2VlAaRVvZRpAKAmkFGQXW08n\nWdxHCSl32yWrfFyEE9lxnBFxUq8VzV4i9WSz8UZwXwe6sit45nZAGIXZIbry/ET3\nfIFNYcQFQEAxYmkQJ6MRzpVKg68wEYGmK8xnn4RsHQa3T6+qJ7NrCs5TKIW0tfI7\nOSWcY3MDvPmABE1KNsC5nVdeSn87KWs36IOAPIu6SoMwbteIexMKWOpZHffO1ZCe\nQpkMwVgwT467sfsFu2PhABDKz0Te4X9GiQQjQCNvVDlV7O0y/cD+i06W3RV8OyXO\n1U7QYmKRkMcNXfvqCYgeCIaQ38ILKgDlVyhmKAltAQKBgQD4t4uG5jZJpQEL7Kcy\nh/aYCCFdVeycmPNzMzSo3Dc0/IIHKZVg29abCrangVd1K9IRVnvKqaf/DxprXKoN\nONG8leqs3PZj4WeT7vFA6fkrXLg/11TqHVa8VyOnKFWOYMnG5M9kIfI0VZ/qfGGz\nJnlSJq2AafhdCHLhz08PCZc9TwKBgQDRqpUqWG3HTn05IkX86EnwhLVWAxXJppQr\nnY17RM0UBrE3jxQJ1T3tc7sOcKXYt2HVpOxC9I7TCV7Ryr02hCiDjFVvlvkYqs3R\nL6nl8GE+EibQ4OqizozKnngcu0bS0lHfwRRWc73iuadI6i7Z6xqM9ODeWBP55qjO\nwc8P7KcepQKBgQCM5T1vcB603XqYTLny0D8LpR9xhmmB1MulKQ7d0dKce6cVc6Mh\nuaf7MLiEb6shv29DTyDVkAKRZPbsdxQGZXe7Q5orzwjtUBWjIisdQO5ceCwQTmXW\nMkSecSbLXPgKrh3gRGKQMQLKTu9GoKugF12HAk4rftypp02dShlZRW+d1QKBgQCH\nwHv+Q+0oS7CWipNoMfqVyUcj3rF/s+Rh7QwLETv7SG37/B7MUw5arUEjE1q+W9Xz\nn2n93ByRlZKYIT2ri5wzuGwk6Up1ZzoFxGer4p0DtHr/aXFiYnwUQNCiQbuUiurK\nBliltSDwKKagdkhJfojdVTw3mi2s82S/IgtwUxjNpQKBgCv/T+tZozqnc/kXw3Us\np6sIR1RHeeLLsJsqSn73jMWSETb1Xup7fus5PCgnpcMGkYQQRn0U1YE3bUgFpMwi\nMNGBlF08DAdKwFguG8Om4q+uVx4zCmAAkJJDdx5obDqrZwTHOtsYSzOXm78etc92\nFM+6WG9Iu8QuWja643z2ElwF\n-----END PRIVATE KEY-----\n",
+  client_email: "firebase-adminsdk-fbsvc@power-line-gas.iam.gserviceaccount.com",
+  client_id: "105319469366032621882",
+  auth_uri: "https://accounts.google.com/o/oauth2/auth",
+  token_uri: "https://oauth2.googleapis.com/token",
+  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+  client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40power-line-gas.iam.gserviceaccount.com",
+  universe_domain: "googleapis.com"
+}
+
+export default serviceAccount;

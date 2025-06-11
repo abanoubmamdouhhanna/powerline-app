@@ -1,0 +1,15 @@
+export const googleCredentials = {
+  type: "service_account",
+  project_id: "powerline-458521",
+  private_key_id: "8084e0fe61246e4af62586fe5d38966f51fe2141",
+  private_key:
+    "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC2Z5bGehgHogGw\nFgeMGTB5gfqDhQhUtJJtvzj27LH86sG3F2L5OLMkn944daWjC3lt/AAkCRJiiXlW\nmDNHeJiV0AmPS10bQAIZdPE8isxph84qaWicTPatwm2Cfoee0z1LCZv1VYzuelFf\n8aJlQLk1LtCpm9kdfMrb0msxk313MgtLKbAuA/XUey6jnMBolfXPTVolhNw8/9G4\nWfAzVqXULab2hdS5nn1wBglkX2xseI8nFO0GT98Uv9wiR4Hxx0O8GuvrZnZ6dUOS\n/y24M5szpPbjEFhqG4GzfQy327WPPnarmvyIq2zThYNcRCjVVYRNcJ7AR9bPJVGM\ng7EwSj0zAgMBAAECggEAMwPm6gz00pGviimnI7pZ0eoWABnBejtkptgwHPOXVkbs\nNgKO9mgyxmAGHWFeGatYY3fzLCDzaObNLnh0Ax3KA0CDo/WujTQKQkdwPwAM6skG\nUttXXDu0VGXIDhLIaJXpEycVXPj36S0BvGVPB6WiBytYRc+mWjZwYCnKPDvlf+Pg\nz+SxDpRdT5Rv11wdmfMo2VSYKTgqXPA1FLaefNxlmBAZmGtL0G0Us/jsxvDaKlKd\nFJJCpNuk4eSSkg9DFPjWrINDV80GVevyRgCIDww/K1OVsQvrUs1Ne3CWExreCYZP\nXAh01C4gH8EQXPQS384kuCZ8jIXvYXPOoIei4WAdBQKBgQDfFaMSYY8vu2nqmcjO\nzU1jcmOPJyTqXDlgbO1yp+iDAsyv6I0zTIaNkcdIj0GllHtxLljmUPUq8UJ93Q9V\nKvVR5TZFxqdpZMrcUFo8ZRq4nxXWq5eWlAd6hO6n33jUQ7MM9YmljIwU9QRyRB9T\nx1fqGPoJGPBDl8xGdrl38/tuRQKBgQDRUWOaWiQXLnmG+A5aOqjBVu+1OO6XUwxt\nv4vCO4IaEYKvYopMamR3BZK7DV1klidKWtEc2cn+KS6FQ18HI/bUDQOy2/RWrqFi\nnf7LsMto2MZydsJ149cr+vhEZ78tEnjuCFVUtqAf5l1d2rEg81stjhOmUpffF1Hk\nLTOBNknRFwKBgD4XZqEaGGF/t3Y9wX+V8wFH+GAC1CqK6slk6B4uj+/PGqunfY2W\nsii7N42BmhL9JfKVpNbOF78REaG4oqjg4REfTCDVrwkNrczubH884NgcJ1btwa5+\nmypFz6tX7uidwztLKDm0ydSXcdpgDZwi8txMgWOA1nbpzEiciPjTJttFAoGBAK5e\nAH0aTipJes8mYL5lUyMMCs+KR6cjdZ0PDZuV+wFASP9VNSQHFP3ZVKwhrAUY2E4m\nbUB9ZLknESvOPaEzInDvDn+2n0p+Ws5OE20XL7t9qYK8z61pSVvHy30gd69STg7s\nPjk9kRJB0tFWVmu+jdvbGR9aek1LndpYlSk0UjWtAoGAZbX0jNTgdeEJXGocG6BC\nO1bBMDdlpXeHisQygUW3QtdQGnZ+DPhXdAAON/Y3cbr2CtTk7CCYQkAE8+2G/tg3\nRfiIprvB3+8fozY242Fojt9CQcl9QjYgZY6JiQXQXBsDXm1e46xLgttXv1tvRlIk\no+4clKR7um8DZ3wwwaw74ek=\n-----END PRIVATE KEY-----\n",
+  client_email: "powerlinegas@powerline-458521.iam.gserviceaccount.com",
+  client_id: "112926338645312483364",
+  auth_uri: "https://accounts.google.com/o/oauth2/auth",
+  token_uri: "https://oauth2.googleapis.com/token",
+  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+  client_x509_cert_url:
+    "https://www.googleapis.com/robot/v1/metadata/x509/powerlinegas%40powerline-458521.iam.gserviceaccount.com",
+  universe_domain: "googleapis.com",
+};
