@@ -67,7 +67,7 @@ router.post(
   auth(["admin", "assistant"]),
   verifyPermissions("manageStations"),
   flexibleDocumentUpload(5, 25),
-  isValid(addStationSchema),
+  // isValid(addStationSchema),
   stationController.addStation
 );
 

@@ -330,48 +330,192 @@ export const addStation = asyncHandler(async (req, res, next) => {
 
 //====================================================================================================================//
 //get all stations
+// export const getAllStations = asyncHandler(async (req, res, next) => {
+//   const targetLang = req.language || "en"; // fallback to 'en'
+
+//   const stations = await stationModel
+//     .find({}, "stationName employees")
+//     .populate("stationEmployees", "name imageUrl permissions"); // assuming 'name' is the field that might be translated
+
+//   const enrichedStations = stations.map((station) => {
+//     // Translate station name
+//     const stationNameField = station.stationName;
+//     const translatedStationName =
+//       typeof stationNameField === "object"
+//         ? stationNameField[targetLang] ||
+//           stationNameField.en ||
+//           Object.values(stationNameField)[0]
+//         : stationNameField;
+
+//     // Translate employee names
+//     const translatedEmployees = station.stationEmployees.map((employee) => {
+//       const employeeNameField = employee.name;
+//       const translatedEmployeeName =
+//         typeof employeeNameField === "object"
+//           ? employeeNameField[targetLang] ||
+//             employeeNameField.en ||
+//             Object.values(employeeNameField)[0]
+//           : employeeNameField;
+
+//       return {
+//         _id: employee._id,
+//         name: translatedEmployeeName,
+//         imageUrl: employee.imageUrl,
+//         permissions: employee.permissions,
+//       };
+//     });
+
+//     return {
+//       _id: station._id,
+//       stationName: translatedStationName,
+//       stationEmployees: translatedEmployees,
+//       employeeCount: station.stationEmployees.length,
+//     };
+//   });
+
+//   return res.status(200).json({
+//     message: "Success",
+//     result: enrichedStations,
+//   });
+// });
+// export const getAllStations = asyncHandler(async (req, res, next) => {
+//   const targetLang = req.language || "en"; // fallback to 'en'
+
+//   const stations = await stationModel
+//     .find({}, "stationName employees")
+//     .populate({
+//       path: "stationEmployees",
+//       select: "name imageUrl permissions",
+//       populate: {
+//         path: "permissions",
+//         select: "permissionName",
+//       },
+//     });
+
+//   const enrichedStations = stations.map((station) => {
+//     // Translate station name
+//     const stationNameField = station.stationName;
+//     const translatedStationName =
+//       typeof stationNameField === "object"
+//         ? stationNameField[targetLang] ||
+//           stationNameField.en ||
+//           Object.values(stationNameField)[0]
+//         : stationNameField;
+
+//     // Translate employee names and permission names
+//     const translatedEmployees = station.stationEmployees.map((employee) => {
+//       const employeeNameField = employee.name;
+//       const translatedEmployeeName =
+//         typeof employeeNameField === "object"
+//           ? employeeNameField[targetLang] ||
+//             employeeNameField.en ||
+//             Object.values(employeeNameField)[0]
+//           : employeeNameField;
+
+//       // Translate permission name
+//       let translatedPermissionName = null;
+//       if (employee.permissions) {
+//         const permissionNameField = employee.permissions.permissionName;
+//         translatedPermissionName =
+//           typeof permissionNameField === "object"
+//             ? permissionNameField[targetLang] ||
+//               permissionNameField.en ||
+//               Object.values(permissionNameField)[0]
+//             : permissionNameField;
+//       }
+
+//       return {
+//         _id: employee._id,
+//         name: translatedEmployeeName,
+//         imageUrl: employee.imageUrl,
+//         permissionName: translatedPermissionName || 'Employee',
+//       };
+//     });
+
+//     return {
+//       _id: station._id,
+//       stationName: translatedStationName,
+//       stationEmployees: translatedEmployees,
+//       employeeCount: station.stationEmployees.length,
+//     };
+//   });
+
+//   return res.status(200).json({
+//     message: "Success",
+//     result: enrichedStations,
+//   });
+// });
 export const getAllStations = asyncHandler(async (req, res, next) => {
   const targetLang = req.language || "en"; // fallback to 'en'
 
   const stations = await stationModel
     .find({}, "stationName employees")
-    .populate("stationEmployees", "name imageUrl permissions"); // assuming 'name' is the field that might be translated
-
-  const enrichedStations = stations.map((station) => {
-    // Translate station name
-    const stationNameField = station.stationName;
-    const translatedStationName =
-      typeof stationNameField === "object"
-        ? stationNameField[targetLang] ||
-          stationNameField.en ||
-          Object.values(stationNameField)[0]
-        : stationNameField;
-
-    // Translate employee names
-    const translatedEmployees = station.stationEmployees.map((employee) => {
-      const employeeNameField = employee.name;
-      const translatedEmployeeName =
-        typeof employeeNameField === "object"
-          ? employeeNameField[targetLang] ||
-            employeeNameField.en ||
-            Object.values(employeeNameField)[0]
-          : employeeNameField;
-
-      return {
-        _id: employee._id,
-        name: translatedEmployeeName,
-        imageUrl: employee.imageUrl,
-        permissions: employee.permissions,
-      };
+    .populate({
+      path: "stationEmployees",
+      select: "name imageUrl permissions",
+      populate: {
+        path: "permissions",
+        select: "permissionName",
+      },
     });
 
-    return {
-      _id: station._id,
-      stationName: translatedStationName,
-      stationEmployees: translatedEmployees,
-      employeeCount: station.stationEmployees.length,
-    };
-  });
+  const enrichedStations = await Promise.all(
+    stations.map(async (station) => {
+      // Translate station name
+      const stationNameField = station.stationName;
+      const translatedStationName =
+        typeof stationNameField === "object"
+          ? stationNameField[targetLang] ||
+            stationNameField.en ||
+            Object.values(stationNameField)[0]
+          : stationNameField;
+
+      // Translate employee names and permission names
+      const translatedEmployees = await Promise.all(
+        station.stationEmployees.map(async (employee) => {
+          const employeeNameField = employee.name;
+          const translatedEmployeeName =
+            typeof employeeNameField === "object"
+              ? employeeNameField[targetLang] ||
+                employeeNameField.en ||
+                Object.values(employeeNameField)[0]
+              : employeeNameField;
+
+          // Translate permission name
+          let translatedPermissionName = null;
+          if (employee.permissions) {
+            const permissionNameField = employee.permissions.permissionName;
+            translatedPermissionName =
+              typeof permissionNameField === "object"
+                ? permissionNameField[targetLang] ||
+                  permissionNameField.en ||
+                  Object.values(permissionNameField)[0]
+                : permissionNameField;
+          }
+
+          // Translate 'Employee' fallback if no permissionName
+          if (!translatedPermissionName) {
+            const { translatedText } = await translateAutoDetect("Employee", targetLang);
+            translatedPermissionName = translatedText;
+          }
+
+          return {
+            _id: employee._id,
+            name: translatedEmployeeName,
+            imageUrl: employee.imageUrl,
+            permissionName: translatedPermissionName,
+          };
+        })
+      );
+
+      return {
+        _id: station._id,
+        stationName: translatedStationName,
+        stationEmployees: translatedEmployees,
+        employeeCount: station.stationEmployees.length,
+      };
+    })
+  );
 
   return res.status(200).json({
     message: "Success",
