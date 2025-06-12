@@ -23,7 +23,7 @@ export function getReceiverSocketIds(userId) {
   return userSocketMap.get(userId) || new Set();
 }
 //====================================================================================================================//
-const sendMessage = async (message) => {
+const sendMessage = async (message, callback) => {
   try {
     const { senderId, receiverId } = message;
     const createMessage = await messageModel.create(message);
@@ -33,20 +33,64 @@ const sendMessage = async (message) => {
       .populate("receiverId", "_id email name imageUrl")
       .lean();
 
-    if (!messageData) return;
+    if (!messageData) {
+      callback({ status: "error", error: "Message not created" });
+      return;
+    }
 
-    // Emit to sender and receiver using emitToUser
+    // Emit to sender and receiver
     emitToUser(senderId, "receiveMessage", messageData);
     emitToUser(receiverId, "receiveMessage", messageData);
+    callback({ status: "sent", messageId: createMessage._id });
   } catch (error) {
     console.error("Error sending message:", error);
+    callback({ status: "error", error: error.message });
+    emitToUser(message.senderId, "error", {
+      message: "Failed to send message",
+    });
   }
 };
 
 //====================================================================================================================//
-const sendGroupMessage = async (message) => {
+const sendGroupMessage = async (message, callback) => {
   try {
     const { groupId, senderId, content, messageType, fileUrl } = message;
+
+    // Validate group existence and fetch members
+    const group = await groupModel
+      .findById(groupId)
+      .populate("members", "_id")
+      .populate("admin", "_id")
+      .lean();
+
+    if (!group) {
+      console.error(`Group not found: ${groupId}`);
+      callback && callback({ status: "error", error: "Group not found" });
+      return;
+    }
+
+    // Validate members and admin
+    const members = Array.isArray(group.members) ? group.members : [];
+    const admin = group.admin || null;
+    const validMembers = [
+      ...members.filter((member) => member && member._id),
+      ...(admin && admin._id ? [admin] : []),
+    ].filter(Boolean); // Remove null/undefined
+
+    if (validMembers.length === 0) {
+      console.warn(`No valid members in group ${groupId}`);
+      callback &&
+        callback({ status: "error", error: "No valid members in group" });
+      return;
+    }
+
+    // Log group details for debugging
+    console.log(
+      `Group ${groupId} members:`,
+      validMembers.map((m) => m._id.toString())
+    );
+
+    // Create message
     const createMessage = await messageModel.create({
       senderId,
       receiverId: null,
@@ -54,6 +98,7 @@ const sendGroupMessage = async (message) => {
       messageType,
       timestamp: new Date(),
       fileUrl,
+      groupId, // Store groupId for querying
     });
 
     const messageData = await messageModel
@@ -61,28 +106,33 @@ const sendGroupMessage = async (message) => {
       .populate("senderId", "_id email name employeeId imageUrl")
       .lean();
 
-    if (!messageData) return;
+    if (!messageData) {
+      console.error(`Message not created for group: ${groupId}`);
+      callback && callback({ status: "error", error: "Message not created" });
+      return;
+    }
 
     messageData.groupId = groupId;
 
-    const group = await groupModel
-      .findByIdAndUpdate(
-        groupId,
-        { $push: { messages: createMessage._id } },
-        { new: true }
-      )
-      .populate("members", "_id")
-      .populate("admin", "_id")
-      .lean();
+    // Update group with message
+    await groupModel.findByIdAndUpdate(
+      groupId,
+      { $push: { messages: createMessage._id } },
+      { new: true }
+    );
 
-    if (!group || !group.members) return;
-
-    // Emit to all group members using emitToUser
-    [...group.members, group.admin].forEach((member) => {
+    // Emit to valid members
+    validMembers.forEach((member) => {
       emitToUser(member._id.toString(), "receiveGroupMessage", messageData);
     });
+
+    callback && callback({ status: "sent", messageId: createMessage._id });
   } catch (error) {
     console.error("Error sending group message:", error);
+    callback && callback({ status: "error", error: error.message });
+    emitToUser(message.senderId, "error", {
+      message: "Failed to send group message",
+    });
   }
 };
 
@@ -122,14 +172,20 @@ const updateMessage = async ({ messageId, newContent }) => {
 const deleteMessage = async (messageId) => {
   try {
     const message = await messageModel.findById(messageId);
-    if (!message) return;
+    if (!message) {
+      emitToUser(message.senderId, "error", { message: "Message not found" });
+      return;
+    }
 
     const createdAt = new Date(message.createdAt);
-    const now = new Date();
+    const now = Date();
     const timeDiff = (now - createdAt) / (1000 * 60);
 
     if (timeDiff > 15) {
       console.log("Delete not allowed after 15 minutes.");
+      emitToUser(message.senderId, "error", {
+        message: "Delete not allowed after 15 minutes",
+      });
       return;
     }
 
@@ -140,6 +196,9 @@ const deleteMessage = async (messageId) => {
     emitToUser(receiverId, "messageDeleted", { messageId });
   } catch (error) {
     console.error("Error deleting message:", error);
+    emitToUser(message.senderId, "error", {
+      message: "Failed to delete message",
+    });
   }
 };
 
@@ -156,11 +215,17 @@ io.on("connection", (socket) => {
     userSocketMap.get(userId).add(socket.id);
     console.log(`Mapped user ${userId} to socket ${socket.id}`);
   }
-
-  // Handle joining rooms
-  socket.on("join", (roomID) => {
+  // Handle joining one-on-one chat room
+  socket.on("join", ({ userId, receiverId }) => {
+    const roomID = [userId, receiverId].sort().join("_");
     socket.join(roomID);
     console.log(`User ${socket.id} joined room: ${roomID}`);
+  });
+
+  // Handle joining group chat room
+  socket.on("joinGroup", ({ userId, groupId }) => {
+    socket.join(groupId);
+    console.log(`User ${socket.id} joined group: ${groupId}`);
   });
 
   socket.on("sendMessage", sendMessage);
@@ -198,5 +263,4 @@ function emitToUser(userId, event, data) {
     }
   }
 }
-
 export { io, app, server };
